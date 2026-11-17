@@ -16,9 +16,9 @@ python3 scripts/prepare_pdf_batch.py "/path/product-a.pdf" "/path/product-b.pdf"
 
 ## 2. 整理和生成每款产品
 
-逐款阅读页文及相关渲染页、查看原图，执行技能中的事实核验、英文重写、封面和白底图片规则。源图片不能跨 PDF 混用；同一个 PDF 的历史核验结果仅在 hash、SKU、证据和已处理图片一致时复用。
+逐款阅读全部详情页和每张原图内的文字，不只依赖 PDF 文本层。建立 `detail-coverage.json`，将产品介绍、材质、设备、优势、展示、包装、定制与采购须知等原有模块映射到完整英文详情；标记每张不同照片的去向及合并/排除原因。源图片不能跨 PDF 混用；同一个 PDF 的历史核验结果仅在 hash、SKU、证据和已处理图片一致时复用。
 
-将独立成品放到最终 CSV 同目录的 `images/<file_name>/`、`details/`。详情片段必须与 content 相同；完整页本地图片路径相对 details 目录，远程模式直接使用已验证的 ImgBB URL。汇总本批 `image-manifest.json`，不夹入之前未选的产品。
+将独立成品放到最终 CSV 同目录的 `images/<file_name>/`、`details/`。详情最大宽度 1400px，按来源内容灵活排版。详情片段必须与 content 相同；完整页本地图片路径相对 details 目录，远程模式直接使用已验证的 ImgBB URL。汇总本批 `image-manifest.json`：`images` 为白底图库，`detail_images` 为有来源与语境的详情专用图，不夹入之前未选的产品。
 
 每款的 `products/<product_id>/product.json`：
 

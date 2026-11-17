@@ -121,14 +121,19 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
         if not pairs: fail(n, 'No gallery images')
         if pairs and row.get('thumb') != pairs[0][0]: fail(n, 'Cover is not the first gallery image')
         if len(set(url for url, _ in pairs)) != len(pairs): fail(n, 'Duplicate gallery image references')
-        allowed = {url for url, _ in pairs}
-        if row.get('scenario_image') and row['scenario_image'] not in allowed:
+        gallery_urls = {url for url, _ in pairs}
+        detail_entries = records.get(slug, {}).get('detail_images', [])
+        detail_urls = [e.get('direct_url' if mode == 'remote' else 'path', '') for e in detail_entries]
+        if len(set(detail_urls)) != len(detail_urls): fail(n, 'Duplicate detail asset references')
+        if gallery_urls.intersection(detail_urls): fail(n, 'Shared gallery assets must not be duplicated in detail_images')
+        allowed = gallery_urls | set(detail_urls)
+        if row.get('scenario_image') and row['scenario_image'] not in gallery_urls:
             fail(n, 'scenario_image is outside the product gallery')
         if not parsed.images or parsed.images[0][0] != row.get('thumb'):
             fail(n, 'First detail image is not the cover')
         for url, alt in pairs + parsed.images:
             if not alt or CJK.search(alt): fail(n, 'Missing or non-English image alt')
-            if url not in allowed: fail(n, 'Detail image is outside the product gallery')
+            if url not in allowed: fail(n, 'Detail image has no approved asset provenance')
             if mode == 'remote' and not direct(url): fail(n, 'Image must be an ImgBB WebP Direct link')
             if mode == 'local' and not local_file(root, url): fail(n, 'Local WebP missing or unsafe path')
         entries = records.get(slug, {}).get('images', [])
@@ -146,6 +151,20 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
             elif (entry.get('role') != 'gallery' or entry.get('white_background') is not True
                   or entry.get('origin') not in ('source_white', 'background_edited', 'text_localized')):
                 fail(n, 'Gallery image is not a verified source-derived white-background image')
+        used_detail_urls = {url for url, _ in parsed.images}
+        for entry, url in zip(detail_entries, detail_urls):
+            if entry.get('role') not in ('detail_photo', 'production', 'material', 'application', 'drawing'):
+                fail(n, 'Invalid detail asset role')
+            if entry.get('origin') not in ('source_detail', 'text_localized', 'background_edited'):
+                fail(n, 'Detail asset must come from the supplied product PDF')
+            if not entry.get('source') or not entry.get('source_pages') or not entry.get('context'):
+                fail(n, 'Detail asset needs PDF provenance and context')
+            if entry.get('visual_reviewed') is not True or entry.get('context_reviewed') is not True:
+                fail(n, 'Detail asset visual/context verification is incomplete')
+            if not entry.get('alt') or CJK.search(entry['alt']): fail(n, 'Detail asset needs English alt')
+            if not local_file(root, entry.get('path', '')): fail(n, 'Detail asset local WebP is missing')
+            if mode == 'remote' and not direct(url): fail(n, 'Detail asset must have an ImgBB WebP Direct link')
+            if url not in used_detail_urls: fail(n, 'Approved detail asset is not used in the content')
         folder = root / 'images' / slug
         if folder.exists() and any(x.is_file() and x.suffix != '.webp' for x in folder.iterdir()):
             fail(n, 'Final image folder includes non-WebP files')
@@ -165,7 +184,7 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
                 fail(n, 'Standalone detail page needs a viewport meta tag')
             for url, alt in HTMLImages(page_text).images:
                 if mode == 'remote':
-                    if url not in allowed: fail(n, 'Standalone detail image is outside the gallery')
+                    if url not in allowed: fail(n, 'Standalone detail image has no approved asset provenance')
                 else:
                     resolved = (page.parent / url).resolve()
                     expected = {(root / value).resolve() for value in allowed}

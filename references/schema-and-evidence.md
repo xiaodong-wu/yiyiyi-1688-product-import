@@ -12,7 +12,7 @@
 | title | 英文品名、准确型号和关键规格。 |
 | remark | 一至两句英文概述。 |
 | pro_fields | 通常 4–8 行，无 bullet/横线/序号；事实少时不凑数，但关键缺失应暂停。 |
-| content | 本品全新 HTML 片段，英文、无脚本，所有图片属于本品。 |
+| content | 根据 PDF 全部产品详情重排的英文 HTML 片段，无脚本；本品图片与有来源的设备/应用/定制案例分清语境。 |
 | file_name | ASCII lowercase-kebab-case，无扩展名和目录。 |
 | seo_title1 / seo_desc | 分别与 title / remark 完全相同。 |
 | thumb | 生成封面，与 images 第一项一致。 |
@@ -44,6 +44,10 @@ status 为 ready、partial 或 blocked。缺失不是零，未知不是不支持
 - direct_url：可选，成功上传后的 ImgBB WebP data.url。
 
 布尔声明不能代替看图，不填写假 URL 通过校验。
+
+可选 `detail_images` 与 `images` 并列，用于内容中出现、但不进入白底图库的原始详情图。每项保留 `path`、`source`、`source_pages`、`source_sha256`、`sha256`、英文 `alt`、`context`、`visual_reviewed`、`context_reviewed`，上传后加 `direct_url`。`role` 为 `detail_photo`、`production`、`material`、`application` 或 `drawing`；`origin` 为 `source_detail`、`text_localized` 或 `background_edited`。无需虚称白底或当前 SKU；所有登记的详情图必须实际用于内容。直接复用图库图时不重复登记。
+
+`detail-coverage.json` 对应源 PDF 的每个详情模块及图片，记录页码、原文/摘要、模块 ID、处理决定与原因；一张拼图内多张照片分别记录视窗坐标，避免只用了其中一张却声称全部覆盖。图片中的参数和采购须知可以重排为英文 HTML，不必保留中文整图。重复、无关、冲突、未确认项明确标注处理方式。
 
 ## 待处理行
 

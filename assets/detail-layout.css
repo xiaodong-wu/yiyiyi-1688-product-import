@@ -1,12 +1,12 @@
-/* Yiyiyi detail layout: 1000px content container */
+/* Yiyiyi detail layout: 1400px content container */
 .product_detail_box,
 .yy-product {
   width: 100%;
-  max-width: 1000px;
+  max-width: 1400px;
   margin-inline: auto;
   container: yy-detail / inline-size;
 }
-.product_detail_box .pd_container { width: calc(100% - 40px); max-width: 960px; }
+.product_detail_box .pd_container { width: calc(100% - 40px); max-width: 1360px; }
 .product_detail_box .pd_section:nth-of-type(-n+2) { padding: 40px 0; }
 .product_detail_box .pd_overview_grid {
   grid-template-columns: minmax(0,.94fr) minmax(0,1.06fr);

@@ -1,0 +1,55 @@
+/* Yiyiyi product detail theme: #13b2da */
+.product_detail_box,
+.yy-product {
+  --yy-primary: #13b2da;
+  --yy-heading: #086a83;
+  --yy-label: #087a94;
+  --yy-text: #344b55;
+  --yy-muted: #526873;
+  --yy-line: #cfeef5;
+  --yy-soft: #f1fbfe;
+}
+.product_detail_box {
+  --pd-green: var(--yy-heading);
+  --pd-green-2: var(--yy-label);
+  --pd-accent: var(--yy-primary);
+  --pd-text: var(--yy-muted);
+  --pd-copy: var(--yy-text);
+  --pd-muted: var(--yy-muted);
+  --pd-line: var(--yy-line);
+  --pd-soft: var(--yy-soft);
+  --pd-panel: #f5fbfd;
+}
+.product_detail_box strong { color: var(--yy-heading); }
+.product_detail_box .pd_kicker,
+.product_detail_box .pd_story_tag,
+.product_detail_box .pd_formula_label { color: var(--yy-label); }
+.product_detail_box .pd_kicker::before { background: var(--yy-primary); }
+.product_detail_box .pd_spec_item span { color: var(--yy-muted); }
+.product_detail_box .pd_parameter_list { border-top-color: #a8dfea; }
+.product_detail_box .pd_parameter_no { color: var(--yy-label); border-color: #a8dfea; }
+.product_detail_box .pd_process_no,
+.product_detail_box .pd_faq_no { color: #063e4d; }
+.product_detail_box .pd_story_feature_image,
+.product_detail_box .pd_story_tile_image,
+.product_detail_box .pd_company_metric { background: var(--yy-soft); }
+.product_detail_box .pd_story_feature_content .pd_company_closing {
+  color: var(--yy-heading);
+  background: #e8f8fc;
+}
+.product_detail_box .pd_overview_grid,
+.product_detail_box .pd_story_feature,
+.product_detail_box .pd_story_tile,
+.product_detail_box .pd_faq_item { box-shadow: 0 12px 32px rgba(8,106,131,.07); }
+.yy-product { color: var(--yy-text); }
+.yy-product h1,
+.yy-product h2,
+.yy-product h3 { color: var(--yy-heading); }
+.yy-product section,
+.yy-product th,
+.yy-product td { border-color: var(--yy-line); }
+.yy-product th,
+.yy-product article { background: var(--yy-soft); }
+.yy-product article { border-top: 3px solid var(--yy-primary); }
+.yy-product .yy-kicker { color: var(--yy-label); border-left: 3px solid var(--yy-primary); padding-left: 12px; }
+.yy-product figcaption { color: var(--yy-muted); }

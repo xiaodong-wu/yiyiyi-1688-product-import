@@ -1,0 +1,69 @@
+<style>
+.yy-product{max-width:1120px;margin:auto;color:#263746;font:16px/1.7 Arial,sans-serif}.yy-product *{box-sizing:border-box}.yy-product h1,.yy-product h2,.yy-product h3{color:#124b7a;line-height:1.25}.yy-product h1{font-size:34px}.yy-product h2{font-size:26px;margin:0 0 22px}.yy-product section{padding:36px 20px;border-bottom:1px solid #e4eaf0}.yy-hero{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:center}.yy-product img{display:block;max-width:100%;height:auto}.yy-product table{border-collapse:collapse;width:100%}.yy-product th,.yy-product td{text-align:left;vertical-align:top;padding:12px 16px;border-bottom:1px solid #e4eaf0}.yy-product th{width:34%;background:#f3f7fa;font-weight:600}.yy-grid,.yy-gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}.yy-product article{padding:18px;background:#f7f9fb}.yy-product article h3{margin-top:0;font-size:19px}.yy-product p{margin:0 0 16px}.yy-product figcaption{font-size:14px;color:#506374;margin-top:10px}.yy-product figure{margin:0}.yy-kicker{font-size:13px;letter-spacing:1.4px;text-transform:uppercase;color:#b66113}@media(max-width:680px){.yy-hero,.yy-grid,.yy-gallery{grid-template-columns:1fr}.yy-product h1{font-size:27px}.yy-product section{padding:24px 14px}.yy-product th,.yy-product td{padding:10px}}
+</style>
+<style>
+/* Yiyiyi product detail theme: #13b2da */
+.product_detail_box,
+.yy-product {
+  --yy-primary: #13b2da;
+  --yy-heading: #086a83;
+  --yy-label: #087a94;
+  --yy-text: #344b55;
+  --yy-muted: #526873;
+  --yy-line: #cfeef5;
+  --yy-soft: #f1fbfe;
+}
+.product_detail_box {
+  --pd-green: var(--yy-heading);
+  --pd-green-2: var(--yy-label);
+  --pd-accent: var(--yy-primary);
+  --pd-text: var(--yy-muted);
+  --pd-copy: var(--yy-text);
+  --pd-muted: var(--yy-muted);
+  --pd-line: var(--yy-line);
+  --pd-soft: var(--yy-soft);
+  --pd-panel: #f5fbfd;
+}
+.product_detail_box strong { color: var(--yy-heading); }
+.product_detail_box .pd_kicker,
+.product_detail_box .pd_story_tag,
+.product_detail_box .pd_formula_label { color: var(--yy-label); }
+.product_detail_box .pd_kicker::before { background: var(--yy-primary); }
+.product_detail_box .pd_spec_item span { color: var(--yy-muted); }
+.product_detail_box .pd_parameter_list { border-top-color: #a8dfea; }
+.product_detail_box .pd_parameter_no { color: var(--yy-label); border-color: #a8dfea; }
+.product_detail_box .pd_process_no,
+.product_detail_box .pd_faq_no { color: #063e4d; }
+.product_detail_box .pd_story_feature_image,
+.product_detail_box .pd_story_tile_image,
+.product_detail_box .pd_company_metric { background: var(--yy-soft); }
+.product_detail_box .pd_story_feature_content .pd_company_closing {
+  color: var(--yy-heading);
+  background: #e8f8fc;
+}
+.product_detail_box .pd_overview_grid,
+.product_detail_box .pd_story_feature,
+.product_detail_box .pd_story_tile,
+.product_detail_box .pd_faq_item { box-shadow: 0 12px 32px rgba(8,106,131,.07); }
+.yy-product { color: var(--yy-text); }
+.yy-product h1,
+.yy-product h2,
+.yy-product h3 { color: var(--yy-heading); }
+.yy-product section,
+.yy-product th,
+.yy-product td { border-color: var(--yy-line); }
+.yy-product th,
+.yy-product article { background: var(--yy-soft); }
+.yy-product article { border-top: 3px solid var(--yy-primary); }
+.yy-product .yy-kicker { color: var(--yy-label); border-left: 3px solid var(--yy-primary); padding-left: 12px; }
+.yy-product figcaption { color: var(--yy-muted); }
+</style>
+<div class="yy-product">
+<section class="yy-hero"><div><p class="yy-kicker">{{CATEGORY}}</p><h1>{{TITLE}}</h1><p>{{OVERVIEW}}</p></div><img src="{{COVER_SRC}}" alt="{{COVER_ALT}}"></section>
+<section><h2>Product Features</h2><div class="yy-grid">{{FEATURE_ARTICLES}}</div></section>
+<section><h2>Technical Specifications</h2><table><tbody>{{SPEC_ROWS}}</tbody></table></section>
+<section><h2>Applications and Selection</h2>{{APPLICATION_PARAGRAPHS}}</section>
+<section><h2>Product Details</h2><div class="yy-gallery">{{PRODUCT_FIGURES}}</div></section>
+<section><h2>Packaging</h2>{{PACKAGING_PARAGRAPHS}}</section>
+<section><h2>Frequently Asked Questions</h2><div class="yy-grid">{{FAQ_ARTICLES}}</div></section>
+</div>

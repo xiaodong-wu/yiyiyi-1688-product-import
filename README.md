@@ -37,7 +37,7 @@ git clone https://github.com/xiaodong-wu/yiyiyi-1688-product-import.git \
 title,remark,thumb,scenario_image,images,pro_fields,content,seo_title1,seo_desc,file_name,IMGBB_API_KEY
 ```
 
-最终 CSV 保留输入表的列结构。PDF 到产品行的对应关系单独记录在 `.mapping.json` 中；源 PDF、上传凭据和实际导入文件保存在本地运行目录。
+最终 CSV 保留输入表的列结构，使用 UTF-8 无 BOM 和不加引号的标准字段名表头；包含逗号、引号或换行的正文按 CSV 规范转义。PDF 到产品行的对应关系单独记录在 `.mapping.json` 中；源 PDF、上传凭据和实际导入文件保存在本地运行目录。
 
 ## 运行方式
 
@@ -64,5 +64,8 @@ python3 scripts/prepare_pdf_batch.py /path/product-a.pdf /path/product-b.pdf \
 | `assets/` | 空白导入模板、详情模板、配色和封面布局参考 |
 | `references/` | PDF 批处理、证据字段及图片工作流 |
 | `scripts/` | 提取、批处理、CSV 合成、WebP 转换、上传和校验脚本 |
+| `tests/` | CSV 编码、表头和列数兼容性回归测试 |
+
+运行 CSV 兼容性测试：`python3 -m unittest discover -s tests -v`。
 
 封面布局参考来源见 [图片工作流](references/image-workflow.md)。技能不自动执行网站导入或发布。

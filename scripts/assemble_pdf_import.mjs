@@ -21,6 +21,7 @@ const sheet = workbook.worksheets.getItemAt(0);
 const width = manifest.headers.length;
 const headers = sheet.getRangeByIndexes(0,0,1,width).values[0];
 assert.deepEqual(headers,manifest.headers);
+assert(headers.every(h=>typeof h==='string' && h===h.trim() && !/[\uFEFF\u200B-\u200D\u2060\r\n]/u.test(h)), 'Header contains whitespace or invisible characters');
 const sourceRows = manifest.template_rows ? sheet.getRangeByIndexes(1,0,manifest.template_rows,width).values : [];
 const generated = 'title remark thumb scenario_image images pro_fields content seo_title1 seo_desc file_name'.split(' ');
 const rows = [], mapping = [], slugs = new Set();
@@ -57,12 +58,16 @@ sheet.getRangeByIndexes(1,0,rows.length,width).values = rows;
 workbook.recalculate();
 const outputValues=sheet.getRangeByIndexes(0,0,rows.length+1,width).values;
 assert(JSON.stringify(outputValues)===JSON.stringify([headers,...rows]),'Spreadsheet values did not round-trip; output stopped');
-const quote = value => '"'+String(value??'').replaceAll('"','""')+'"';
+// Match the website template: plain UTF-8 without BOM and quote only CSV-special values.
+const quote = value => {
+  const text = String(value??'');
+  return /[",\r\n]/.test(text) ? '"'+text.replaceAll('"','""')+'"' : text;
+};
 const output = path.resolve(args['--output']);
 assert(output!==path.resolve(manifest.template_path),'Never overwrite the source template');
 await fs.mkdir(path.dirname(output),{recursive:true});
 // Exclusive create prevents accidental overwrite of an earlier batch; use a new output name for revisions.
-await fs.writeFile(output,'\uFEFF'+outputValues.map(r=>r.map(quote).join(',')).join('\r\n')+'\r\n',{flag:'wx',mode:0o600});
+await fs.writeFile(output,outputValues.map(r=>r.map(quote).join(',')).join('\r\n')+'\r\n',{flag:'wx',mode:0o600});
 const mappingPath = output.replace(/\.csv$/i,'')+'.mapping.json';
 await fs.writeFile(mappingPath,JSON.stringify({input_mode:'pdf_batch',rows:mapping,
   skipped:manifest.products.filter(x=>x.status!=='ready').map(x=>({product_id:x.product_id,source_file:x.source_file,status:x.status,reason:x.reason||''})),

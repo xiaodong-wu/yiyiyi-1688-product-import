@@ -56,8 +56,32 @@ def local_file(root, value):
 
 def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
     root = csv_path.parent
-    headers, rows = read_csv(csv_path)
     errors = []
+    raw = csv_path.read_bytes()
+    if raw.startswith(b'\xef\xbb\xbf'):
+        errors.append('UTF-8 BOM in output may corrupt the first header; export UTF-8 without BOM')
+    try:
+        with csv_path.open(encoding='utf-8', newline='') as f:
+            parsed = list(csv.reader(f, strict=True))
+    except (UnicodeDecodeError, csv.Error):
+        return errors + ['Output is not valid UTF-8 CSV'], 0
+    plain_headers = parsed[0] if parsed else []
+    if len(plain_headers) != len(set(plain_headers)):
+        errors.append('Duplicate CSV headers')
+    if any(h != h.strip() or re.search(r'[\ufeff\u200b-\u200d\u2060\r\n]', h) for h in plain_headers):
+        errors.append('CSV header contains whitespace or invisible characters')
+    for n, cells in enumerate(parsed[1:], 2):
+        if len(cells) != len(plain_headers):
+            errors.append(f'row {n}: CSV field count differs from header count')
+    if set(GENERATED) - set(plain_headers):
+        errors.append('Raw UTF-8 parser cannot match every required header exactly')
+    # Output must have template-compatible plain field identifiers. Input templates may have BOM.
+    if plain_headers and all(re.fullmatch(r'[A-Za-z_][A-Za-z_0-9]*', h) for h in plain_headers):
+        if raw.split(b'\n', 1)[0].rstrip(b'\r').decode('utf-8') != ','.join(plain_headers):
+            errors.append('Use unquoted field names in the header to match the website template')
+    if errors:
+        return errors, max(len(parsed) - 1, 0)
+    headers, rows = read_csv(csv_path)
     def fail(n, message): errors.append(f'row {n}: {message}')
     missing = set(GENERATED) - set(headers)
     if missing: errors.append('Missing headers: ' + ', '.join(sorted(missing)))

@@ -59,6 +59,6 @@ python3 scripts/validate_output.py /path/output/products_completed.csv \
   --batch-manifest /path/run/batch-manifest.json
 ```
 
-合成器仅读取 ready 产品，保留用户 11 列或自定义表头及顺序，不读取 link 抓网页。密钥只在内存和用户指定范围的最终 CSV 中；不输出含密钥的断言差异、JSON、工作簿、截图或 ZIP。完成 CSV 使用独占创建，不覆盖上一批结果；源模板变更会停止合成，需先重新核对配置。
+合成器仅读取 ready 产品，保留用户 11 列或自定义表头及顺序，不读取 link 抓网页。导出 UTF-8 无 BOM，标准表头不加引号，含逗号/双引号/换行的数据字段规范转义。密钥只在内存和用户指定范围的最终 CSV 中；不输出含密钥的断言差异、JSON、工作簿、截图或 ZIP。完成 CSV 使用独占创建，不覆盖上一批结果；源模板变更会停止合成，需先重新核对配置。
 
 输出旁的 `products_completed.mapping.json` 给出每个 PDF 对应的输出行、模板行、slug，以及跳过/重复项。不把待处理资料伪装成产品空行。最终报告实际 PDF 数、完成产品数、重复/失败数、图片复用或新生成状态；真实样本只有一份时如实称单产品测试，多输入逻辑测试另列为合成测试。

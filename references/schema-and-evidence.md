@@ -2,6 +2,8 @@
 
 默认字段顺序与用户 PDF 导入模板一致：`title,remark,thumb,scenario_image,images,pro_fields,content,seo_title1,seo_desc,file_name,IMGBB_API_KEY`。有实际输入表时以该表表头及顺序为准；`link` 和 `template` 是旧表可选列，不是必需输入。
 
+导出必须是 UTF-8 无 BOM；标准字段名表头不加双引号、空格或不可见字符。数据按需使用 CSV 双引号和双引号转义，保留正文、参数和图库字段中的真实换行。用普通 UTF-8 CSV 解析器读取完成表，逐项精确匹配所有列，检查每条记录列数和每个字段值。输入模板可以兼容读取 BOM，但完成表校验必须拒绝 BOM。
+
 | 字段 | 规则 |
 | --- | --- |
 | link | 可选来源记录，只填 PDF 已核实的本品 URL，否则留空；不抓取此列，不保留旧示例商品链接。 |

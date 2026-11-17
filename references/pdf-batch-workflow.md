@@ -20,6 +20,8 @@ python3 scripts/prepare_pdf_batch.py "/path/product-a.pdf" "/path/product-b.pdf"
 
 将独立成品放到最终 CSV 同目录的 `images/<file_name>/`、`details/`。详情最大宽度 1400px，按来源内容灵活排版。详情片段必须与 content 相同；完整页本地图片路径相对 details 目录，远程模式直接使用已验证的 ImgBB URL。汇总本批 `image-manifest.json`：`images` 为白底图库，`detail_images` 为有来源与语境的详情专用图，不夹入之前未选的产品。
 
+在每款原有详情全部完成后，按该款证据新增六个不同的英文产品问答，使用 `assets/faq-section.html` 的标记放在最底部。问答依据记录到该款 `product.json` 的 `faq` 数组或 `evidence.json`，包含 question、answer 与 sources；该内部记录不新增 CSV 列。最终校验会拒绝缺少 FAQ、非六条、空回答、重复问题或 FAQ 后仍有正文的结果。
+
 每款的 `products/<product_id>/product.json`：
 
 ```json

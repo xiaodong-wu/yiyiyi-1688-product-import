@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from test_faq import fixture
 
 spec = importlib.util.spec_from_file_location('validator', Path(__file__).resolve().parents[1] / 'scripts/validate_output.py')
 validator = importlib.util.module_from_spec(spec)
@@ -31,6 +32,8 @@ class DetailAssets(unittest.TestCase):
     def tearDown(self): self.tmp.cleanup()
 
     def errors(self):
+        if 'data-product-faq' not in self.body:
+            self.body += fixture()
         row = dict(title='Example',remark='Example product.',thumb=self.cover,scenario_image='',
                    images=self.cover+'|Product cover',pro_fields='Material: Steel',content=self.body,
                    seo_title1='Example',seo_desc='Example product.',file_name='example',IMGBB_API_KEY='')

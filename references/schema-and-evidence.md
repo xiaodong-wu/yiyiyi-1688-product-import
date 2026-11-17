@@ -12,7 +12,7 @@
 | title | 英文品名、准确型号和关键规格。 |
 | remark | 一至两句英文概述。 |
 | pro_fields | 通常 4–8 行，无 bullet/横线/序号；事实少时不凑数，但关键缺失应暂停。 |
-| content | 根据 PDF 全部产品详情重排的英文 HTML 片段，无脚本；本品图片与有来源的设备/应用/定制案例分清语境。 |
+| content | 根据 PDF 全部产品详情重排的英文 HTML 片段，无脚本；区分图片语境；最后一个内容模块为本品的六条英文 FAQ。 |
 | file_name | ASCII lowercase-kebab-case，无扩展名和目录。 |
 | seo_title1 / seo_desc | 分别与 title / remark 完全相同。 |
 | thumb | 生成封面，与 images 第一项一致。 |

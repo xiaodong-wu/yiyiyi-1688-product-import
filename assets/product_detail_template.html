@@ -55,6 +55,11 @@
 .yy-full .yf-terms h3 { margin-bottom:16px; }
 .yy-full .yf-terms p { font-size:15px; }
 .yy-full .yf-space { margin-top:28px; }
+.yy-full .yf-faq-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 36px; }
+.yy-full .yf-faq-item { padding:24px 0; border-top:1px solid var(--yy-line); }
+.yy-full .yf-faq-item h3 { display:flex; gap:12px; font-size:20px; line-height:1.4; margin-bottom:12px; }
+.yy-full .yf-faq-no { flex:none; color:#087a94; font-size:13px; line-height:28px; }
+.yy-full .yf-faq-item p { font-size:16px; line-height:1.7; }
 @container yy-full (max-width:1050px) {
  .yy-full .yf-section { padding:36px 28px; }
  .yy-full .yf-hero { gap:28px; }
@@ -69,7 +74,7 @@
  .yy-full .yf-detail-row { padding:18px; }
 }
 @container yy-full (max-width:760px) {
- .yy-full .yf-hero,.yy-full .yf-split,.yy-full .yf-grid,.yy-full .yf-terms { grid-template-columns:minmax(0,1fr); }
+ .yy-full .yf-hero,.yy-full .yf-split,.yy-full .yf-grid,.yy-full .yf-terms,.yy-full .yf-faq-grid { grid-template-columns:minmax(0,1fr); }
  .yy-full .yf-hero-image { max-width:480px; margin-inline:auto; }
  .yy-full .yf-head { display:block; }
  .yy-full .yf-head>p { max-width:none; margin-top:16px; }
@@ -96,4 +101,15 @@
 <div class="yy-product yy-full">
 {{HERO_BLOCK}}
 {{DETAIL_SECTIONS}}
+<section class="yf-section yf-faq" id="product-faq" data-product-faq="true">
+  <header class="yf-head"><div><p class="yf-kicker">Product support</p><h2>Frequently Asked Questions</h2></div></header>
+  <div class="yf-faq-grid">
+    <article class="yf-faq-item" data-faq-item="true"><h3><span class="yf-faq-no" aria-hidden="true">01</span><span data-faq-question="true">{{FAQ_1_QUESTION}}</span></h3><p data-faq-answer="true">{{FAQ_1_ANSWER}}</p></article>
+    <article class="yf-faq-item" data-faq-item="true"><h3><span class="yf-faq-no" aria-hidden="true">02</span><span data-faq-question="true">{{FAQ_2_QUESTION}}</span></h3><p data-faq-answer="true">{{FAQ_2_ANSWER}}</p></article>
+    <article class="yf-faq-item" data-faq-item="true"><h3><span class="yf-faq-no" aria-hidden="true">03</span><span data-faq-question="true">{{FAQ_3_QUESTION}}</span></h3><p data-faq-answer="true">{{FAQ_3_ANSWER}}</p></article>
+    <article class="yf-faq-item" data-faq-item="true"><h3><span class="yf-faq-no" aria-hidden="true">04</span><span data-faq-question="true">{{FAQ_4_QUESTION}}</span></h3><p data-faq-answer="true">{{FAQ_4_ANSWER}}</p></article>
+    <article class="yf-faq-item" data-faq-item="true"><h3><span class="yf-faq-no" aria-hidden="true">05</span><span data-faq-question="true">{{FAQ_5_QUESTION}}</span></h3><p data-faq-answer="true">{{FAQ_5_ANSWER}}</p></article>
+    <article class="yf-faq-item" data-faq-item="true"><h3><span class="yf-faq-no" aria-hidden="true">06</span><span data-faq-question="true">{{FAQ_6_QUESTION}}</span></h3><p data-faq-answer="true">{{FAQ_6_ANSWER}}</p></article>
+  </div>
+</section>
 </div>

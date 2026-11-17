@@ -30,6 +30,73 @@ class HTMLImages(HTMLParser):
             self.unsafe = True
 
 
+class HTMLFAQ(HTMLParser):
+    """Read marked FAQ pairs and verify that FAQ is the final visible content."""
+    VOID = {'area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr'}
+
+    def __init__(self, text):
+        super().__init__()
+        self.stack = []
+        self.sections = 0
+        self.items = []
+        self.last_visible_in_faq = False
+        self.feed(text)
+
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        parent = self.stack[-1] if self.stack else {}
+        frame = {'tag': tag, 'faq': parent.get('faq', False),
+                 'item': parent.get('item'), 'field': parent.get('field'),
+                 'hidden': parent.get('hidden', False) or tag in ('style','script','head')}
+        if 'data-product-faq' in a:
+            self.sections += 1
+            frame['faq'] = True
+        if 'data-faq-item' in a and frame['faq']:
+            item = {'question': '', 'answer': '', 'question_count': 0, 'answer_count': 0}
+            self.items.append(item)
+            frame['item'] = item
+        for field in ('question', 'answer'):
+            if 'data-faq-' + field in a and frame['item'] is not None:
+                frame['field'] = field
+                frame['item'][field + '_count'] += 1
+        if tag in ('img', 'video', 'audio', 'hr') and not frame['hidden']:
+            self.last_visible_in_faq = frame['faq']
+        if tag not in self.VOID:
+            self.stack.append(frame)
+
+    def handle_endtag(self, tag):
+        for i in range(len(self.stack) - 1, -1, -1):
+            if self.stack[i]['tag'] == tag:
+                del self.stack[i:]
+                break
+
+    def handle_data(self, data):
+        frame = self.stack[-1] if self.stack else {}
+        if data.strip() and not frame.get('hidden'):
+            self.last_visible_in_faq = frame.get('faq', False)
+            if frame.get('item') is not None and frame.get('field'):
+                frame['item'][frame['field']] += data
+
+
+def faq_errors(content):
+    faq = HTMLFAQ(content)
+    errors = []
+    if faq.sections != 1:
+        errors.append('Exactly one marked product FAQ section is required')
+    if len(faq.items) != 6:
+        errors.append('Product FAQ must contain exactly 6 question/answer pairs')
+    questions = []
+    for item in faq.items:
+        if any(item[f + '_count'] != 1 or not item[f].strip() for f in ('question','answer')):
+            errors.append('Each FAQ item needs one non-empty question and one non-empty answer')
+        questions.append(re.sub(r'\W+', '', item['question'].casefold()))
+    if len(set(questions)) != len(questions):
+        errors.append('FAQ questions must be distinct')
+    if not faq.last_visible_in_faq:
+        errors.append('Product FAQ must be the final visible detail content')
+    return errors
+
+
 def read_csv(path):
     with path.open(encoding='utf-8-sig', newline='') as f:
         r = csv.DictReader(f)
@@ -108,6 +175,7 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
         if any(re.match(r'^\s*(?:[•●▪*+\-]|\d+[.)])\s*', s) for s in row.get('pro_fields', '').splitlines()):
             fail(n, 'pro_fields has leading bullets or numbering')
         content = row.get('content', '')
+        for error in faq_errors(content): fail(n, error)
         if re.search(r'\{\{.+?\}\}|\bTODO\b|\bPLACEHOLDER\b', content): fail(n, 'Unfilled content template')
         parsed = HTMLImages(content)
         if parsed.unsafe: fail(n, 'Executable or embedded content is not allowed')
@@ -178,6 +246,7 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
         page = root / 'details' / (slug + '.html')
         if page.is_file():
             page_text = page.read_text(encoding='utf-8')
+            for error in faq_errors(page_text): fail(n, 'Standalone detail: ' + error)
             if not re.search(r'<html\b[^>]*\blang=[\"\']en[\"\']', page_text, re.I):
                 fail(n, 'Standalone detail page needs lang=en')
             if not re.search(r'<meta\b[^>]*\bname=[\"\']viewport[\"\']', page_text, re.I):

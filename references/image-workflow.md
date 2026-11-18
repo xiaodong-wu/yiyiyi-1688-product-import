@@ -29,7 +29,7 @@ Only use supplied facts. Do not add ratings, purity, certifications, holes or di
 
 ## 组图
 
-选择同 SKU 白底原图，按整体、原有不同视角、细节、包装排序去重。不要求固定数量，不用翻转同图或生成视角凑数。
+已提供同商品 API 数据时，核对 item_id，读取 main_imgs，保持原顺序并逐张登记。image-manifest.json 的产品对象保存 carousel_sources：每项含 url 和 status（used / excluded）；排除项附 reason。每张合格组图保存 carousel_index（从 1 起）、source（对应原 URL）和 source_sha256。不可凭相似图替换；完整导出后回读 images。未提供轮播资料才从 PDF 选同 SKU 白底原图。封面、每张组图都检查实际编码尺寸为正方形；详情图按真实照片、图纸及卡片语境选比例，只等比缩放、留白或从原素材分离完整照片。不要求固定数量，不用翻转同图或生成视角凑数。
 白/近白允许自然柔影；灰色场景、工厂、桌面、彩色广告、中文促销图不是可直接交付白底图。
 去背景、文字翻译用 imagegen；不能改变工程结构。仅格式转换/压缩使用 Pillow 脚本。
 不要任意去除铭牌、型号、批号或技术标记；无法保真翻译时另选无字图。

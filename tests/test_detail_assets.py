@@ -21,7 +21,7 @@ class DetailAssets(unittest.TestCase):
         self.cover = 'images/example/cover.webp'
         self.factory = 'images/example/factory.webp'
         for path in (self.cover, self.factory):
-            (self.root/path).write_bytes(b'RIFF\x00\x00\x00\x00WEBPfixture')
+            validator.Image.new("RGB", (20,20) if path==self.cover else (40,20)).save(self.root/path, "WEBP")
         self.body = f'<div><img src="{self.cover}" alt="Product cover"><img src="{self.factory}" alt="Supplier equipment"></div>'
         self.gallery = [{'path':self.cover,'role':'cover','origin':'generated_cover','source':'fixture',
                          'alt':'Product cover','visual_reviewed':True,'product_match':True}]
@@ -44,11 +44,19 @@ class DetailAssets(unittest.TestCase):
         (self.root/'details/example.html').write_text('<html lang="en"><head><meta name="viewport" content="width=device-width"></head><body>'+self.body.replace('src="images/','src="../images/')+'</body></html>')
         (self.root/'details/example.txt').write_text('Example product.')
         manifest=self.root/'image-manifest.json'
-        manifest.write_text(json.dumps({'products':[{'file_name':'example','images':self.gallery,'detail_images':self.details}]}))
+        manifest.write_text(json.dumps({'products':[{'file_name':'example','images':self.gallery,'detail_images':self.details,**getattr(self,'extra_manifest',{})}]}))
         return validator.validate(p,'local',manifest)[0]
 
     def test_reviewed_production_photo_is_allowed_outside_gallery(self):
         self.assertEqual(self.errors(),[])
+
+    def test_rectangular_cover_rejected_even_if_css_would_make_it_square(self):
+        validator.Image.new("RGB", (30,20)).save(self.root/self.cover, "WEBP")
+        self.assertTrue(any('must be square' in error for error in self.errors()))
+
+    def test_carousel_source_cannot_be_left_as_a_side_attachment(self):
+        self.extra_manifest = {"carousel_sources":[{"url":"https://example.test/angle.jpg","status":"used"}]}
+        self.assertTrue(any("carousel source order" in e for e in self.errors()))
 
     def test_unregistered_detail_photo_is_rejected(self):
         self.details=[]

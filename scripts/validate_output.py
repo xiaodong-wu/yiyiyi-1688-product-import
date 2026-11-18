@@ -7,6 +7,7 @@ import html
 from html.parser import HTMLParser
 import json
 from pathlib import Path
+from PIL import Image
 import re
 from urllib.parse import urlparse
 
@@ -205,6 +206,17 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
             if mode == 'remote' and not direct(url): fail(n, 'Image must be an ImgBB WebP Direct link')
             if mode == 'local' and not local_file(root, url): fail(n, 'Local WebP missing or unsafe path')
         entries = records.get(slug, {}).get('images', [])
+        carousel = records.get(slug, {}).get('carousel_sources')
+        if carousel is not None:
+            if not isinstance(carousel, list) or not carousel or any(
+                not isinstance(s, dict) or not s.get('url') or s.get('status') not in ('used','excluded')
+                or (s.get('status') == 'excluded' and not str(s.get('reason','')).strip()) for s in carousel):
+                fail(n, 'Invalid carousel source inventory')
+            else:
+                expected = [(i,s['url']) for i,s in enumerate(carousel,1) if s['status']=='used']
+                actual = [(e.get('carousel_index'),e.get('source')) for e in entries[1:]]
+                if actual != expected or any(not re.fullmatch('[0-9a-f]{64}',str(e.get('source_sha256',''))) for e in entries[1:]):
+                    fail(n, 'Gallery does not match the original carousel source order or hashes')
         if len(entries) != len(pairs): fail(n, 'Image manifest count differs from gallery')
         for i, (entry, pair) in enumerate(zip(entries, pairs)):
             if entry.get('direct_url' if mode == 'remote' else 'path') != pair[0]: fail(n, 'Manifest order/URL mismatch')
@@ -213,6 +225,14 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
             if entry.get('visual_reviewed') is not True or entry.get('product_match') is not True:
                 fail(n, 'Image visual/product verification is incomplete')
             if not local_file(root, entry.get('path', '')): fail(n, 'Manifest local WebP is missing')
+            asset = local_file(root, entry.get('path', ''))
+            if asset:
+                try:
+                    with Image.open(asset) as im:
+                        if im.format != 'WEBP' or im.width != im.height:
+                            fail(n, 'Cover and gallery WebP images must be square')
+                except OSError:
+                    fail(n, 'Cannot decode gallery asset')
             if i == 0:
                 if entry.get('role') != 'cover' or entry.get('origin') != 'generated_cover':
                     fail(n, 'First image must be a generated cover')

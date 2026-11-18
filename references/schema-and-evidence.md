@@ -43,6 +43,8 @@ status 为 ready、partial 或 blocked。缺失不是零，未知不是不支持
 - white_background：非封面图确为白底后填 true。
 - direct_url：可选，成功上传后的 ImgBB WebP data.url。
 
+提供 1688 轮播时，产品级 carousel_sources 按接口顺序逐图记录，组图逐张回指其序号、源 URL 和校验值，详见 image-workflow.md。导出器必须按清单顺序将组图写进 images 字段。封面及组图校验实际 WebP 为正方形；详情插图不限制比例。
+
 布尔声明不能代替看图，不填写假 URL 通过校验。
 
 可选 `detail_images` 与 `images` 并列，用于内容中出现、但不进入白底图库的原始详情图。每项保留 `path`、`source`、`source_pages`、`source_sha256`、`sha256`、英文 `alt`、`context`、`visual_reviewed`、`context_reviewed`，上传后加 `direct_url`。`role` 为 `detail_photo`、`production`、`material`、`application` 或 `drawing`；`origin` 为 `source_detail`、`text_localized` 或 `background_edited`。无需虚称白底或当前 SKU；所有登记的详情图必须实际用于内容。直接复用图库图时不重复登记。

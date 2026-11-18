@@ -12,7 +12,7 @@
 | IMGBB_API_KEY | 仅用于本行图片上传；可留空以生成本地预览。 |
 | title | 英文品名、准确型号和关键规格。 |
 | remark | 一至两句英文概述。 |
-| pro_fields | 通常 4–8 行，无 bullet/横线/序号；事实少时不凑数，但关键缺失应暂停。 |
+| pro_fields | 首行为 `Product Name<TAB>：英文品名`（<TAB> 为一个实际制表符），其后每行 `English Label：English Value`。全角冒号两侧无空格。可选项按证据用空格、斜线、空格分隔。字段和数量取决于本品资料。 |
 | content | 根据 PDF 全部产品详情重排的英文 HTML 片段，无脚本；区分图片语境；最后一个内容模块为本品的六条英文 FAQ。 |
 | file_name | ASCII lowercase-kebab-case，无扩展名和目录。 |
 | seo_title1 / seo_desc | 分别与 title / remark 完全相同。 |
@@ -39,6 +39,7 @@ status 为 ready、partial 或 blocked。缺失不是零，未知不是不支持
 - origin：封面 generated_cover；组图 source_white、background_edited 或 text_localized。
 - source：实际原图 URL 或用户资料路径；封面可追加 references 数组。
 - alt：与表格一致的英文描述。
+- `images[].brand_logo_sha256` 记录所用官方透明 Logo 的 SHA-256。详情专用 `detail_images` 省略此字段；核对导出实际像素后再确认审核状态。
 - visual_reviewed、product_match：实际核对后才填写 true。
 - white_background：非封面图确为白底后填 true。
 - direct_url：可选，成功上传后的 ImgBB WebP data.url。
@@ -56,4 +57,4 @@ status 为 ready、partial 或 blocked。缺失不是零，未知不是不支持
 待处理和重复项记录在 batch-manifest.json 及导出生成的 `.mapping.json`，按 source_file/product_id 追踪，不因前一份失败移动后面的模板配置。未完成产品不放入“已完成”CSV。
 PDF 批处理校验使用 `--batch-manifest`，核对列顺序、ready 产品数量/顺序、PDF hash 与配置值。`--original` 只用于旧的一一对应表格编辑，不适用于模板空行到多份 PDF 的扩展。
 
-详情结尾固定为：[英文报告区](../assets/material-reports.html) → 本品六条英文 FAQ。不要生成 Buying notes & precautions、付款、退换货、售后或签收条款区。保留官方报告原文、图片顺序、站内路径、alt 和 ID；独立预览可以补全站点 https://yyy.szsdzx.com。报告仅指产品组合中的绝缘纸，不属于当前 SKU 的认证。报告原件不加品牌水印、不裁剪，通过 contain 等大展示。
+详情末尾依次放置[固定英文公司简介](../assets/company-intro.html)、[英文报告区](../assets/material-reports.html)和本品六条英文 FAQ。公司简介的两段原文紧接报告区之前。不要生成 Buying notes & precautions、付款、退换货、售后或签收条款区。保留官方报告原文、图片顺序、站内路径、alt 和 ID；独立预览可以补全站点 https://yyy.szsdzx.com。报告仅指产品组合中的绝缘纸，不属于当前 SKU 的认证。报告原件不加品牌水印、不裁剪，通过 contain 等大展示。

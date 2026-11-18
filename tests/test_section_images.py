@@ -14,3 +14,11 @@ class SectionMedia(unittest.TestCase):
             self.assertEqual(validator.section_size_errors(content,files),['Different image dimensions in section: features'])
             validator.Image.new('RGB',(48,48)).save(files['drawing'])
             self.assertFalse(validator.section_size_errors(content,files))
+
+    def test_equipment_section_keeps_intro_and_accepts_only_photos_below(self):
+        head = '<header class="yf-head"><div><h2>Production equipment</h2></div><p>Coil handling.</p></header>'
+        image = '<figure><img src="mill" alt="Slitting equipment"></figure>'
+        section = '<section id="production">' + head + image + '</section>'
+        self.assertEqual(validator.section_size_errors(section + '<section><figcaption>Material</figcaption></section>', {}), [])
+        for caption in ('<figcaption>Mill</figcaption>', '<p>Slitting operation</p>'):
+            self.assertTrue(validator.section_size_errors(section.replace('</figure>', caption + '</figure>'), {}))

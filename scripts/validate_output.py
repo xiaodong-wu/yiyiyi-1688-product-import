@@ -122,7 +122,10 @@ def local_file(root, value):
     return target if data[:4] == b'RIFF' and data[8:12] == b'WEBP' else None
 
 
-REPORT_HTML = (Path(__file__).resolve().parents[1]/'assets/material-reports.html').read_text().strip()
+ASSETS = Path(__file__).resolve().parents[1] / 'assets'
+OFFICIAL_LOGO_HASH = hashlib.sha256((ASSETS / 'yiant-logo.png').read_bytes()).hexdigest()
+COMPANY_HTML = (ASSETS / 'company-intro.html').read_text().strip()
+REPORT_HTML = (ASSETS / 'material-reports.html').read_text().strip()
 REPORT_HOST = 'https://yyy.szsdzx.com'
 
 
@@ -131,6 +134,11 @@ def check_reports(content, standalone=False):
     canonical = re.sub(r'\s+', ' ', REPORT_HTML)
     flat = re.sub(r'\s+', ' ', fragment)
     errors = []
+    company = re.sub(r'>\s+<', '><', COMPANY_HTML)
+    compact = re.sub(r'>\s+<', '><', flat)
+    if (compact.count('class="epd-company-intro"') != 1
+            or company + '<section class="epd-product-section">' not in compact):
+        errors.append('The two official company paragraphs must immediately precede the report section')
     if flat.count(canonical)!=1 or flat.count('class="epd-product-section"')!=1:
         errors.append('Exactly one official English insulation-paper report section is required')
     elif not re.match(r'\s*<section\b[^>]*\bdata-product-faq=["\']true["\']', flat.split(canonical,1)[1],re.I):
@@ -145,24 +153,38 @@ class SectionImages(HTMLParser):
     def __init__(self, content):
         super().__init__()
         self.stack, self.groups = [], []
+        self.layout_errors = []
+        self.in_header = 0
         self.feed(content)
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
         if tag == 'section':
             self.groups.append((a.get('id') or str(len(self.groups)+1), []))
-            self.stack.append(self.groups[-1][1])
+            self.stack.append(self.groups[-1])
         elif tag == 'img' and self.stack:
-            self.stack[-1].append(a.get('src',''))
+            self.stack[-1][1].append(a.get('src',''))
+        elif tag == 'header':
+            self.in_header += 1
+        elif tag == 'figcaption' and self.stack and self.stack[-1][0] == 'production':
+            self.layout_errors.append('Production photos must have no captions')
 
     def handle_endtag(self, tag):
         if tag == 'section' and self.stack:
             self.stack.pop()
+        elif tag == 'header' and self.in_header:
+            self.in_header -= 1
+
+    def handle_data(self, data):
+        if self.stack and self.stack[-1][0] == 'production' and not self.in_header and data.strip():
+            if 'Production grid must contain images only' not in self.layout_errors:
+                self.layout_errors.append('Production grid must contain images only')
 
 
 def section_size_errors(content, files):
-    errors = []
-    for name, urls in SectionImages(content).groups:
+    sections = SectionImages(content)
+    errors = sections.layout_errors
+    for name, urls in sections.groups:
         if len(urls) < 2: continue
         sizes = set()
         for url in set(urls):
@@ -174,6 +196,25 @@ def section_size_errors(content, files):
                 errors.append('Cannot decode section image: '+name)
         if len(sizes)>1: errors.append('Different image dimensions in section: '+name)
     return errors
+
+
+def expected_product_fields(text, title):
+    """Read current or previously reviewed parameter lines for a batch-record comparison."""
+    names, attributes = [], []
+    for line in text.splitlines():
+        if not line.strip():
+            continue
+        pair = re.split(r'[:：]', line, maxsplit=1)
+        if len(pair) != 2 or not all(part.strip() for part in pair):
+            return None
+        label, value = (part.strip() for part in pair)
+        if label.casefold() in ('product name', 'product'):
+            names.append(value)
+        else:
+            attributes.append(label + '：' + value)
+    if len(set(names)) > 1:
+        return None
+    return '\n'.join(['Product Name\t：' + (names[0] if names else title), *attributes])
 
 
 def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
@@ -231,6 +272,8 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
         if row.get('seo_desc') != row.get('remark'): fail(n, 'SEO description differs from remark')
         if any(re.match(r'^\s*(?:[•●▪*+\-]|\d+[.)])\s*', s) for s in row.get('pro_fields', '').splitlines()):
             fail(n, 'pro_fields has leading bullets or numbering')
+        if row['pro_fields'] != expected_product_fields(row['pro_fields'], row['title']):
+            fail(n, 'pro_fields must start with Product Name and use one fullwidth-colon attribute per line')
         content = row.get('content', '')
         for error in check_reports(content): fail(n,error)
         for error in faq_errors(content): fail(n, error)
@@ -274,6 +317,8 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
                     fail(n, 'Gallery does not match the original carousel source order or hashes')
         if len(entries) != len(pairs): fail(n, 'Image manifest count differs from gallery')
         for i, (entry, pair) in enumerate(zip(entries, pairs)):
+            if entry.get('brand_logo_sha256') != OFFICIAL_LOGO_HASH:
+                fail(n, 'Cover and gallery assets must use the official Yiant logo')
             if entry.get('direct_url' if mode == 'remote' else 'path') != pair[0]: fail(n, 'Manifest order/URL mismatch')
             if entry.get('alt') != pair[1]: fail(n, 'Manifest alt differs from gallery')
             if not entry.get('source'): fail(n, 'Missing original image source')
@@ -296,6 +341,8 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
                 fail(n, 'Gallery image is not a verified source-derived white-background image')
         used_detail_urls = {url for url, _ in parsed.images}
         for entry, url in zip(detail_entries, detail_urls):
+            if entry.get('brand_logo_sha256'):
+                fail(n, 'Detail-only images must be exported from an unbranded source')
             if entry.get('role') not in ('detail_photo', 'production', 'material', 'application', 'drawing'):
                 fail(n, 'Invalid detail asset role')
             if entry.get('origin') not in ('source_detail', 'text_localized', 'background_edited'):
@@ -331,6 +378,7 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
             if not re.search(r'<meta\b[^>]*\bname=[\"\']viewport[\"\']', page_text, re.I):
                 fail(n, 'Standalone detail page needs a viewport meta tag')
             for error in check_reports(page_text, standalone=True): fail(n,error)
+            for error in SectionImages(page_text).layout_errors: fail(n, 'Standalone detail: ' + error)
             page_without_reports = page_text.replace(REPORT_HTML.replace('src="/uploadfile/','src="'+REPORT_HOST+'/uploadfile/'),'').replace(REPORT_HTML,'')
             for url, alt in HTMLImages(page_without_reports).images:
                 if mode == 'remote':
@@ -383,6 +431,8 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
             for key in headers:
                 expected = (record.get('row', {}).get(key, '') if key in GENERATED else
                             record.get('verified_source_url', '') if key == 'link' else '' if key in ('SANDBASE_API_KEY','IMGBB_API_KEY') else config.get(key, ''))
+                if key == 'pro_fields':
+                    expected = expected_product_fields(expected, record['row']['title'])
                 if row.get(key, '') != expected:
                     fail(n, 'Product or template configuration differs in field: ' + key)
     return errors, len(rows)

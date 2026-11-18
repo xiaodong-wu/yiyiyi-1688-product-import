@@ -19,6 +19,14 @@ class CsvFormat(unittest.TestCase):
             errors, _ = validator.validate(path, 'local', Path(directory) / 'not-needed.json')
             self.assertTrue(any(expected in error for error in errors), errors)
 
+    def test_product_fields_keep_order_values_and_fullwidth_colons(self):
+        legacy = 'Material: Steel / Nickel\nProduct: Roll\nRatio: 2:1\nThickness: ≥ 0.15mm'
+        expected = 'Product Name\t：Roll\nMaterial：Steel / Nickel\nRatio：2:1\nThickness：≥ 0.15mm'
+        self.assertEqual(validator.expected_product_fields(legacy, 'Example'), expected)
+        self.assertEqual(validator.expected_product_fields(expected, 'Example'), expected)
+        self.assertIsNone(validator.expected_product_fields('Material：', 'Example'))
+        self.assertIsNone(validator.expected_product_fields('Product: A\nProduct Name：B', 'Example'))
+
     def test_bom_before_quoted_title_is_rejected(self):
         raw = ('\ufeff' + ','.join('"'+h+'"' for h in HEADERS) + '\r\n').encode()
         self.check_rejected(raw, 'BOM')

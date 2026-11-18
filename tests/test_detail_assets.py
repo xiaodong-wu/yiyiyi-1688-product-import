@@ -24,6 +24,7 @@ class DetailAssets(unittest.TestCase):
             validator.Image.new("RGB", (20,20) if path==self.cover else (40,20)).save(self.root/path, "WEBP")
         self.body = f'<div><img src="{self.cover}" alt="Product cover"><img src="{self.factory}" alt="Supplier equipment"></div>'
         self.gallery = [{'path':self.cover,'role':'cover','origin':'generated_cover','source':'fixture',
+                         'brand_logo_sha256':validator.OFFICIAL_LOGO_HASH,
                          'alt':'Product cover','visual_reviewed':True,'product_match':True}]
         self.details = [{'path':self.factory,'role':'production','origin':'source_detail','source':'fixture.pdf',
                          'source_pages':[3],'context':'Equipment shown in supplier PDF','alt':'Supplier equipment',
@@ -33,9 +34,9 @@ class DetailAssets(unittest.TestCase):
 
     def errors(self):
         if 'data-product-faq' not in self.body:
-            self.body += validator.REPORT_HTML + fixture()
+            self.body += validator.COMPANY_HTML + validator.REPORT_HTML + fixture()
         row = dict(title='Example',remark='Example product.',thumb=self.cover,
-                   images=self.cover+'|Product cover',pro_fields='Material: Steel',content=self.body,
+                   images=self.cover+'|Product cover',pro_fields='Product Name\t：Example\nMaterial：Steel',content=self.body,
                    seo_title1='Example',seo_desc='Example product.',file_name='example',IMGBB_API_KEY='')
         p=self.root/'product.csv'
         with p.open('w',newline='') as f:
@@ -49,6 +50,13 @@ class DetailAssets(unittest.TestCase):
 
     def test_reviewed_production_photo_is_allowed_outside_gallery(self):
         self.assertEqual(self.errors(),[])
+
+    def test_branding_is_limited_to_gallery_files(self):
+        self.gallery[0].pop('brand_logo_sha256')
+        self.details[0]['brand_logo_sha256'] = validator.OFFICIAL_LOGO_HASH
+        errors = self.errors()
+        self.assertTrue(any('official Yiant logo' in e for e in errors))
+        self.assertTrue(any('unbranded source' in e for e in errors))
 
     def test_rectangular_cover_rejected_even_if_css_would_make_it_square(self):
         validator.Image.new("RGB", (30,20)).save(self.root/self.cover, "WEBP")

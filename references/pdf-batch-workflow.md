@@ -34,7 +34,7 @@ python3 scripts/prepare_pdf_batch.py "/path/product-a.pdf" "/path/product-b.pdf"
     "remark": "Verified English summary.",
     "thumb": "images/product-slug/01-cover.webp",
     "images": "images/product-slug/01-cover.webp|English image alt",
-    "pro_fields": "Material: verified material",
+    "pro_fields": "Product Name\t：Verified product name\nMaterial：Verified material",
     "content": "英文详情HTML片段",
     "seo_title1": "English product title",
     "seo_desc": "Verified English summary.",
@@ -64,4 +64,4 @@ python3 scripts/validate_output.py /path/output/products_completed.csv \
 
 输出旁的 `products_completed.mapping.json` 给出每个 PDF 对应的输出行、模板行、slug，以及跳过/重复项。不把待处理资料伪装成产品空行。最终报告实际 PDF 数、完成产品数、重复/失败数、图片复用或新生成状态；真实样本只有一份时如实称单产品测试，多输入逻辑测试另列为合成测试。
 
-详情结尾固定为：[英文报告区](../assets/material-reports.html) → 本品六条英文 FAQ。不要生成 Buying notes & precautions、付款、退换货、售后或签收条款区。保留官方报告原文、图片顺序、站内路径、alt 和 ID；独立预览可以补全站点 https://yyy.szsdzx.com。报告仅指产品组合中的绝缘纸，不属于当前 SKU 的认证。报告原件不加品牌水印、不裁剪，通过 contain 等大展示。
+详情末尾依次放置[固定英文公司简介](../assets/company-intro.html)、[英文报告区](../assets/material-reports.html)和本品六条英文 FAQ。公司简介的两段原文紧接报告区之前。不要生成 Buying notes & precautions、付款、退换货、售后或签收条款区。保留官方报告原文、图片顺序、站内路径、alt 和 ID；独立预览可以补全站点 https://yyy.szsdzx.com。报告仅指产品组合中的绝缘纸，不属于当前 SKU 的认证。报告原件不加品牌水印、不裁剪，通过 contain 等大展示。

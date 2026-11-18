@@ -25,6 +25,24 @@ const headers=inputHeaders.filter(h=>h!=='scenario_image');
 assert(headers.every(h=>typeof h==='string' && h===h.trim() && !/[\uFEFF\u200B-\u200D\u2060\r\n]/u.test(h)), 'Header contains whitespace or invisible characters');
 const sourceRows = manifest.template_rows ? sheet.getRangeByIndexes(1,0,manifest.template_rows,width).values : [];
 const generated = 'title remark thumb images pro_fields content seo_title1 seo_desc file_name'.split(' ');
+// Previously reviewed products used ASCII colons and sometimes called the name "Product".
+function formatProductFields(text, title) {
+  let name;
+  const attributes = [];
+  for (const line of text.split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    const pair = /^([^:：]+)[:：](.+)$/u.exec(line);
+    assert(pair && pair[1].trim() && pair[2].trim(), 'Expected an attribute name and value in pro_fields');
+    const label = pair[1].trim(), value = pair[2].trim();
+    if (/^product(?: name)?$/i.test(label)) {
+      assert(!name || name === value, 'Conflicting product names in pro_fields');
+      name = value;
+    } else {
+      attributes.push(label + '：' + value);
+    }
+  }
+  return ['Product Name\t：' + (name ?? title), ...attributes].join('\n');
+}
 const rows = [], mapping = [], slugs = new Set();
 const safePath = value => {
   assert(value && !path.isAbsolute(value),'Product file must be relative to the batch directory');
@@ -40,6 +58,7 @@ for (const product of manifest.products) {
   const row = record.row;
   assert(!['IMGBB_API_KEY','SANDBASE_API_KEY'].some(key=>Object.hasOwn(row,key)),'Do not put credentials in product JSON');
   for(const h of generated) assert(typeof row[h]==='string' && row[h].trim(),`Missing generated field: ${h}`);
+  row.pro_fields = formatProductFields(row.pro_fields, row.title);
   assert(/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(row.file_name),'Invalid product slug');
   assert(!slugs.has(row.file_name),'Duplicate product slugs need resolution');
   slugs.add(row.file_name);

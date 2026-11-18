@@ -10,4 +10,4 @@
 4. 按图片工作流制成正方形封面及白底组图；按详情内容生成合适尺寸插图、1400px 英文详情和底部 6 条产品 FAQ。按 PDF 流程里的 product.json 结构写入同一产品目录：source_sha256 使用 item.json 哈希，verified_source_url 等于清单中的规范化 source_file，row 只含九个生成字段。确认实物、详情文字和图源后才标 ready。
 5. 图片上传以源表和清单中的 template_row 调用 upload_images_to_imgbb.py，按原图哈希复用已上传结果。用 assemble_pdf_import.mjs --manifest ... --output ... 合成，再调用 validate_output.py --batch-manifest ...；两个脚本均支持 link_batch。只将 ready 产品导出；未完成行另记。最终文件保留 link 和密钥列名，两列密钥值一律留空。上传始终读取原输入表，而非交付 CSV。
 
-详情结尾固定为：[英文报告区](../assets/material-reports.html) → 本品六条英文 FAQ。不要生成 Buying notes & precautions、付款、退换货、售后或签收条款区。保留官方报告原文、图片顺序、站内路径、alt 和 ID；独立预览可以补全站点 https://yyy.szsdzx.com。报告仅指产品组合中的绝缘纸，不属于当前 SKU 的认证。报告原件不加品牌水印、不裁剪，通过 contain 等大展示。
+详情末尾依次放置[固定英文公司简介](../assets/company-intro.html)、[英文报告区](../assets/material-reports.html)和本品六条英文 FAQ。公司简介的两段原文紧接报告区之前。不要生成 Buying notes & precautions、付款、退换货、售后或签收条款区。保留官方报告原文、图片顺序、站内路径、alt 和 ID；独立预览可以补全站点 https://yyy.szsdzx.com。报告仅指产品组合中的绝缘纸，不属于当前 SKU 的认证。报告原件不加品牌水印、不裁剪，通过 contain 等大展示。

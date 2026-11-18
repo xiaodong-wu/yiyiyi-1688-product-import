@@ -7,6 +7,8 @@ description: 从壹移蚁 CSV 的 1688 商品链接和逐行 SandBase、ImgBB �
 
 每个源产品独立整理为英文表格、独立详情和图片。借鉴辛巴达的字段与 WebP 工作流，但**重新生成整个产品详情**，不继承 Xinbada/Lifeworth 品牌、保健品文案、旧 Product Details 或第三张以后的模板图片。
 
+来自 1688 或 PDF 的本品配图即使自带“AI 生成”标识，也按原顺序纳入处理。以原图和已核实规格制作新版，新生成的图片均须目视确认没有可见的生成标识。来源标识和原图保存在内部图片记录中，具体见[图片处理规则](references/image-workflow.md)。
+
 ## 输入与产物
 
 - 用户要求按表处理且 link 有值时，执行[链接批处理流程](references/link-batch-workflow.md)：按行读取链接和两组密钥，不需要 PDF。用户明确指定 PDF 时走 PDF 路径，只处理指定文件，不额外采集表中的链接。

@@ -225,6 +225,25 @@ def expected_product_fields(text, title):
     return '\n'.join(['Product Name\t：' + (names[0] if names else title), *attributes])
 
 
+def generated_artwork_errors(entry, review_required=False):
+    label = entry.get('source_ai_label')
+    illustrated = entry.get('origin') == 'source_based_illustration'
+    if label is None and not illustrated:
+        if entry.get('generated_label_absent_reviewed', not review_required) is not True:
+            return ['Generated artwork has an incomplete visible-label review']
+        return []
+    errors = []
+    if not isinstance(label, str) or not label.strip():
+        errors.append('Record the visible AI label from the original source')
+    if not re.fullmatch(r'[a-f0-9]{64}', str(entry.get('source_sha256', ''))):
+        errors.append('AI-labeled artwork needs the original image hash')
+    if not (illustrated or entry.get('origin') == 'generated_cover'):
+        errors.append('AI-labeled artwork needs a source-based illustration or generated cover')
+    if entry.get('generated_label_absent_reviewed') is not True:
+        errors.append('Generated artwork has an incomplete visible-label review')
+    return errors
+
+
 def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
     root = csv_path.parent
     errors = []
@@ -326,8 +345,17 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
             else:
                 expected = [(i,s['url']) for i,s in enumerate(carousel,1) if s['status']=='used']
                 actual = [(e.get('carousel_index'),e.get('source')) for e in entries[1:]]
+                source_labels = {s['url']: s.get('source_ai_label') for s in carousel}
+                for entry in entries:
+                    if entry.get('source') in source_labels and entry.get('source_ai_label') != source_labels[entry['source']]:
+                        fail(n, 'AI label differs between the carousel source and exported artwork')
                 if actual != expected or any(not re.fullmatch('[0-9a-f]{64}',str(e.get('source_sha256',''))) for e in entries[1:]):
                     fail(n, 'Gallery does not match the original carousel source order or hashes')
+        current_review = records.get(slug, {}).get('artwork_review_version') == 1
+        for entry in entries + detail_entries:
+            review_required = current_review and entry.get('origin') != 'source_detail'
+            for error in generated_artwork_errors(entry, review_required):
+                fail(n, error)
         if len(entries) != len(pairs): fail(n, 'Image manifest count differs from gallery')
         for i, (entry, pair) in enumerate(zip(entries, pairs)):
             if entry.get('brand_logo_sha256') != OFFICIAL_LOGO_HASH:
@@ -350,7 +378,7 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
                 if entry.get('role') != 'cover' or entry.get('origin') != 'generated_cover':
                     fail(n, 'First image must be a generated cover')
             elif (entry.get('role') != 'gallery' or entry.get('white_background') is not True
-                  or entry.get('origin') not in ('source_white', 'background_edited', 'text_localized')):
+                  or entry.get('origin') not in ('source_white', 'background_edited', 'text_localized', 'source_based_illustration')):
                 fail(n, 'Gallery image is not a verified source-derived white-background image')
         used_detail_urls = {url for url, _ in parsed.images}
         for entry, url in zip(detail_entries, detail_urls):
@@ -358,7 +386,9 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
                 fail(n, 'Detail-only images must be exported from an unbranded source')
             if entry.get('role') not in ('detail_photo', 'production', 'material', 'application', 'drawing'):
                 fail(n, 'Invalid detail asset role')
-            if entry.get('origin') not in ('source_detail', 'text_localized', 'background_edited'):
+            product_illustration = (entry.get('origin') == 'source_based_illustration'
+                                    and entry.get('role') in ('detail_photo', 'application', 'material'))
+            if not product_illustration and entry.get('origin') not in ('source_detail', 'text_localized', 'background_edited'):
                 fail(n, 'Detail asset must come from the supplied product PDF')
             if (not entry.get('source') or not entry.get('context') or not (entry.get('source_pages') or
                     (entry.get('source_panel') and str(entry['source']).startswith('https://') and re.fullmatch(r'[a-f0-9]{64}',str(entry.get('source_sha256','')))))):

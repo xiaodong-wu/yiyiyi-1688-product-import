@@ -36,7 +36,8 @@ status 为 ready、partial 或 blocked。缺失不是零，未知不是不支持
 
 - path：相对输出表的本地 WebP 路径，如 images/example/01-cover.webp。
 - role：首项 cover，其余 gallery。
-- origin：封面 generated_cover；组图 source_white、background_edited 或 text_localized。
+- origin：封面为 generated_cover，常规组图为 source_white、background_edited 或 text_localized。以带生成标识的原图重新制作的组图或详情产品示意图为 source_based_illustration。
+- 对带标识素材，在成图条目写入 source_ai_label（原标识文字）和 source_sha256。对应的 carousel_sources 项也写入相同的 source_ai_label。新建产品清单写入 artwork_review_version: 1。封面、组图和经过处理的详情图均在最终 WebP 目视核对后写入 generated_label_absent_reviewed: true。沿用旧批次时可读取原有清单。带标识素材的来源字段仅供内部核验。
 - source：实际原图 URL 或用户资料路径；封面可追加 references 数组。
 - alt：与表格一致的英文描述。
 - `images[].brand_logo_sha256` 记录所用官方透明 Logo 的 SHA-256。详情专用 `detail_images` 省略此字段；核对导出实际像素后再确认审核状态。

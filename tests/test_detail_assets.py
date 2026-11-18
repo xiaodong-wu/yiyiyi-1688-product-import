@@ -36,7 +36,7 @@ class DetailAssets(unittest.TestCase):
         if 'data-product-faq' not in self.body:
             self.body += validator.COMPANY_HTML + validator.REPORT_HTML + fixture()
         row = dict(title='Example',remark='Example product.',thumb=self.cover,
-                   images=self.cover+'|Product cover',pro_fields='Product Name\t：Example\nMaterial：Steel',content=self.body,
+                   images='\n'.join(e['path']+'|'+e['alt'] for e in self.gallery),pro_fields='Product Name\t：Example\nMaterial：Steel',content=self.body,
                    seo_title1='Example',seo_desc='Example product.',file_name='example',IMGBB_API_KEY='')
         p=self.root/'product.csv'
         with p.open('w',newline='') as f:
@@ -73,6 +73,48 @@ class DetailAssets(unittest.TestCase):
     def test_carousel_source_cannot_be_left_as_a_side_attachment(self):
         self.extra_manifest = {"carousel_sources":[{"url":"https://example.test/angle.jpg","status":"used"}]}
         self.assertTrue(any("carousel source order" in e for e in self.errors()))
+
+    def labeled_carousel(self):
+        source = 'https://example.test/white-ring.jpg'
+        label = '豆包AI生成'
+        self.extra_manifest = {'carousel_sources': [{'url': source, 'status': 'used', 'source_ai_label': label}]}
+        entry = dict(self.gallery[0], path='images/example/ring.webp', role='gallery', source=source,
+                     alt='White ring illustration', origin='source_based_illustration', white_background=True,
+                     source_sha256='1' * 64, carousel_index=1, source_ai_label=label,
+                     generated_label_absent_reviewed=True)
+        validator.Image.new('RGB', (25, 25), 'white').save(self.root/entry['path'], 'WEBP')
+        self.gallery.append(entry)
+        return entry
+
+    def test_new_manifest_requires_visible_label_review_for_unmarked_cover(self):
+        self.extra_manifest = {'artwork_review_version': 1}
+        self.assertTrue(any('visible-label review' in error for error in self.errors()))
+        self.gallery[0]['generated_label_absent_reviewed'] = True
+        self.assertEqual(self.errors(), [])
+
+    def test_labeled_source_is_eligible_in_its_original_position(self):
+        self.labeled_carousel()
+        self.assertEqual(self.errors(), [])
+
+    def test_original_label_and_visual_review_are_checked(self):
+        entry = self.labeled_carousel()
+        entry.pop('generated_label_absent_reviewed')
+        entry.pop('source_ai_label')
+        errors = self.errors()
+        self.assertTrue(any('visible-label review' in error for error in errors))
+        self.assertTrue(any('differs between the carousel' in error for error in errors))
+
+    def test_pdf_illustration_needs_source_hash_and_original_label(self):
+        self.details[0].update(role='material', origin='source_based_illustration', source_ai_label='AI generated',
+                               source_sha256='b' * 64, generated_label_absent_reviewed=True)
+        self.assertEqual(self.errors(), [])
+        self.details[0].pop('source_sha256')
+        self.assertTrue(any('original image hash' in e for e in self.errors()))
+
+    def test_source_illustration_cannot_be_factory_evidence(self):
+        self.details[0].update(origin='source_based_illustration', source_ai_label='AI generated',
+                               source_sha256='a' * 64, generated_label_absent_reviewed=True)
+        self.assertTrue(any('supplied product PDF' in e for e in self.errors()))
 
     def test_unregistered_detail_photo_is_rejected(self):
         self.details=[]

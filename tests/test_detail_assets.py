@@ -51,6 +51,14 @@ class DetailAssets(unittest.TestCase):
     def test_reviewed_production_photo_is_allowed_outside_gallery(self):
         self.assertEqual(self.errors(),[])
 
+    def test_brand_is_checked_in_visible_copy_and_alt_only(self):
+        page = '<style>.yy-full {color:red}</style><div class="yy-product" title="Yiant"><img src="/YY/1" alt="Model YY-32650"></div>'
+        self.assertFalse(validator.HTMLImages(page).has_legacy_brand)
+        for content in ('<p>YY strip</p>', '<img alt="YY reel">', '<h2>&#89;Y</h2>', '<title>YY product</title>'):
+            self.assertTrue(validator.HTMLImages(content).has_legacy_brand)
+        self.body += '<h2>YY battery strip</h2>'
+        self.assertTrue(any('Use Yiant' in e for e in self.errors()))
+
     def test_branding_is_limited_to_gallery_files(self):
         self.gallery[0].pop('brand_logo_sha256')
         self.details[0]['brand_logo_sha256'] = validator.OFFICIAL_LOGO_HASH

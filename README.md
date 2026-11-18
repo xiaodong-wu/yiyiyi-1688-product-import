@@ -10,6 +10,7 @@
 - 逐页覆盖 PDF 的全部产品详情文字与不同图片，生成英文标题、摘要、参数、SEO 内容、完整详情 HTML 和正文 TXT，并记录内容对应表。
 - 根据真实产品照片和布局参考制作封面，有同商品 1688 轮播资料时按原顺序逐张处理白底并写入 CSV；封面与组图均为正方形，详情照片与图纸可按内容采用横幅、竖版等比例，统一输出 WebP。
 - 仅封面与组图叠加官方 Yiant Logo，详情专用图使用加标前的原图。同一详情板块的图片等宽等高（包含图纸），不同板块可用不同比例。
+- 英文品牌统一为 Yiant。详情照片按实际比例铺满图片区域，抽取素材时清理外围拼图线，保留图纸标注。
 - HTML 详情主色为 `#13b2da`，配合深青文字和浅青背景。
 - 详情最大宽度为 1400px，平衡图文高度。各板块的简介放在标题下方。工厂设备区以图片网格展示，每张照片保留英文 alt。
 - 每款详情底部新增 6 条独立的产品相关英文 FAQ，依据本品源资料回答，并校验数量、完整性和底部位置。
@@ -78,4 +79,4 @@ python3 scripts/prepare_pdf_batch.py /path/product-a.pdf /path/product-b.pdf \
 
 封面布局参考来源见 [图片工作流](references/image-workflow.md)。技能不自动执行网站导入或发布。
 
-详情末尾依次放置[固定英文公司简介](assets/company-intro.html)、[英文报告区](assets/material-reports.html)和本品六条英文 FAQ。公司简介的两段原文紧接报告区之前。不要生成 Buying notes & precautions、付款、退换货、售后或签收条款区。保留官方报告原文、图片顺序、站内路径、alt 和 ID；独立预览可以补全站点 https://yyy.szsdzx.com。报告仅指产品组合中的绝缘纸，不属于当前 SKU 的认证。报告原件不加品牌水印、不裁剪，通过 contain 等大展示。
+详情末尾依次放置[固定英文公司简介](assets/company-intro.html)、[英文报告区](assets/material-reports.html)和本品六条英文 FAQ。公司简介使用英文标题 Company Introduction。不要生成 Buying notes & precautions、付款、退换货、售后或签收条款区。保留官方报告原文、图片顺序、站内路径、alt 和 ID；独立预览可以补全站点 https://yyy.szsdzx.com。报告仅指产品组合中的绝缘纸，不属于当前 SKU 的认证。报告原件不加品牌水印、不裁剪，通过 contain 等大展示。

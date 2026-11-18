@@ -16,6 +16,7 @@ class Reports(unittest.TestCase):
         company, report = validator.COMPANY_HTML, validator.REPORT_HTML
         faq = '<section data-product-faq="true"></section>'
         for fragment in (report, company + company + report, report + company,
+                         company.replace('<h2>Company Introduction</h2>', '') + report,
                          company + '<p>Gap</p>' + report, company.replace('Guangzhou', 'Shenzhen') + report):
             with self.subTest(fragment=fragment[:35]):
                 self.assertTrue(any('company paragraphs' in e for e in validator.check_reports(fragment + faq)))

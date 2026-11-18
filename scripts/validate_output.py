@@ -14,6 +14,7 @@ from urllib.parse import urlparse, urlsplit
 GENERATED = 'title remark pro_fields content seo_title1 seo_desc file_name thumb images'.split()
 HEADERS = ['link', 'template', 'SANDBASE_API_KEY','IMGBB_API_KEY'] + GENERATED
 CJK = re.compile(r'[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\U00020000-\U000323af]')
+LEGACY_BRAND = re.compile(r'(?<![\w-])YY(?![\w-])', re.I)
 
 
 class HTMLImages(HTMLParser):
@@ -21,14 +22,21 @@ class HTMLImages(HTMLParser):
         super().__init__()
         self.images = []
         self.unsafe = False
+        self.has_legacy_brand = False
         self.feed(text)
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
         if tag == 'img':
             self.images.append((a.get('src', ''), a.get('alt', '')))
+        if any(LEGACY_BRAND.search(a.get(key) or '') for key in ('alt', 'title', 'aria-label')):
+            self.has_legacy_brand = True
         if tag in ('script', 'iframe', 'object', 'embed') or any(k.startswith('on') for k in a):
             self.unsafe = True
+
+    def handle_data(self, data):
+        if self.cdata_elem not in ('style', 'script') and LEGACY_BRAND.search(data):
+            self.has_legacy_brand = True
 
 
 class HTMLFAQ(HTMLParser):
@@ -138,7 +146,7 @@ def check_reports(content, standalone=False):
     compact = re.sub(r'>\s+<', '><', flat)
     if (compact.count('class="epd-company-intro"') != 1
             or company + '<section class="epd-product-section">' not in compact):
-        errors.append('The two official company paragraphs must immediately precede the report section')
+        errors.append('The Company Introduction heading and official company paragraphs must immediately precede the report section')
     if flat.count(canonical)!=1 or flat.count('class="epd-product-section"')!=1:
         errors.append('Exactly one official English insulation-paper report section is required')
     elif not re.match(r'\s*<section\b[^>]*\bdata-product-faq=["\']true["\']', flat.split(canonical,1)[1],re.I):
@@ -262,6 +270,8 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
             if CJK.search(html.unescape(value)): fail(n, f'{field} contains Chinese text')
             if re.search(r'\b(?:Xinbada|Lifeworth|ZHENGFENG)\b', value, re.I):
                 fail(n, f'{field} contains inherited branding')
+            if field in ('title', 'remark', 'seo_title1', 'seo_desc', 'pro_fields') and LEGACY_BRAND.search(value):
+                fail(n, f'Use Yiant for the brand name in {field}')
         slug = row.get('file_name', '')
         if not re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', slug):
             fail(n, 'Invalid ASCII product slug')
@@ -279,6 +289,8 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
         for error in faq_errors(content): fail(n, error)
         if re.search(r'\{\{.+?\}\}|\bTODO\b|\bPLACEHOLDER\b', content): fail(n, 'Unfilled content template')
         parsed = HTMLImages(content.replace(REPORT_HTML,''))
+        if parsed.has_legacy_brand:
+            fail(n, 'Use Yiant for the brand name in the detail content')
         if parsed.unsafe: fail(n, 'Executable or embedded content is not allowed')
         pairs = []
         for line in row.get('images', '').splitlines():
@@ -299,6 +311,7 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
         if not parsed.images or parsed.images[0][0] != row.get('thumb'):
             fail(n, 'First detail image is not the cover')
         for url, alt in pairs + parsed.images:
+            if LEGACY_BRAND.search(alt or ''): fail(n, 'Use Yiant for the brand name in image alt text')
             if not alt or CJK.search(alt): fail(n, 'Missing or non-English image alt')
             if url not in allowed: fail(n, 'Detail image has no approved asset provenance')
             if mode == 'remote' and not direct(url): fail(n, 'Image must be an ImgBB WebP Direct link')
@@ -366,6 +379,8 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
             path = root / 'details' / (slug + suffix)
             if not path.is_file() or not path.stat().st_size: fail(n, 'Missing independent detail export ' + suffix)
             elif CJK.search(html.unescape(path.read_text(encoding='utf-8'))): fail(n, 'Detail export contains Chinese text')
+            elif suffix == '.txt' and LEGACY_BRAND.search(path.read_text(encoding='utf-8')):
+                fail(n, 'Use Yiant for the brand name in the text export')
         fragment = root / 'details' / (slug + '.fragment.html')
         if fragment.is_file() and fragment.read_text(encoding='utf-8').strip() != content.strip():
             fail(n, 'Detail fragment differs from CSV content')
@@ -380,7 +395,9 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
             for error in check_reports(page_text, standalone=True): fail(n,error)
             for error in SectionImages(page_text).layout_errors: fail(n, 'Standalone detail: ' + error)
             page_without_reports = page_text.replace(REPORT_HTML.replace('src="/uploadfile/','src="'+REPORT_HOST+'/uploadfile/'),'').replace(REPORT_HTML,'')
-            for url, alt in HTMLImages(page_without_reports).images:
+            page_media = HTMLImages(page_without_reports)
+            if page_media.has_legacy_brand: fail(n, 'Use Yiant for the brand name in the standalone page')
+            for url, alt in page_media.images:
                 if mode == 'remote':
                     if url not in allowed: fail(n, 'Standalone detail image has no approved asset provenance')
                 else:

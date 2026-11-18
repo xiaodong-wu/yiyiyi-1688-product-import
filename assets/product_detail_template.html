@@ -9,14 +9,15 @@
 .yy-full h3 { font-size:21px; }
 .yy-full p+p { margin-top:16px; }
 .yy-full img { display:block; max-width:100%; height:auto; }
-.yy-full .yf-section { padding:52px 48px; border-bottom:1px solid var(--yy-line); }
+.yy-full .yf-section { padding:52px 48px; border:0; }
 .yy-full .yf-soft { background:var(--yy-soft); }
 .yy-full .yf-kicker { display:flex; align-items:center; gap:12px; color:#087a94; font-size:12px; font-weight:650; letter-spacing:1.8px; text-transform:uppercase; }
+.yy-full .yf-brand { text-transform:none; letter-spacing:normal; }
 .yy-full .yf-kicker:before { content:''; display:block; width:32px; height:3px; background:var(--yy-primary); }
 .yy-full .yf-head { display:grid; grid-template-columns:minmax(0,1fr); gap:8px; margin-bottom:28px; }
 .yy-full .yf-head h2 { margin-top:10px; }
 .yy-full .yf-head>p { max-width:80ch; font-size:15px; color:var(--yy-muted); }
-.yy-full .yf-hero { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:48px; align-items:center; border-top:5px solid var(--yy-primary); }
+.yy-full .yf-hero { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:48px; align-items:center; }
 .yy-full .yf-hero-image { width:100%; }
 .yy-full .yf-lead { font-size:19px; line-height:1.65; }
 .yy-full .yf-statbar { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; border-top:1px solid var(--yy-line); margin-top:28px; padding-top:24px; }
@@ -34,7 +35,6 @@
 .yy-full .yf-card h3 { margin-bottom:12px; }
 .yy-full .yf-card p { font-size:15px; }
 .yy-full .yf-photo { background:white; }
-.yy-full .yf-photo>img { width:100%; object-fit:contain; }
 .yy-full .yf-window { position:relative; width:100%; overflow:hidden; background:white; }
 .yy-full .yf-window>img { position:absolute; max-width:none; height:auto; }
 .yy-full figcaption { padding-top:12px; color:var(--yy-muted); font-size:14px; line-height:1.55; }
@@ -103,20 +103,14 @@
 .yy-full .yf-split {align-items:center}
 .yy-full .yf-card,.yy-full .yf-terms article {height:100%}
 .yy-full .yf-photo {display:flex;flex-direction:column;min-width:0;border:1px solid var(--yf-frame);overflow:hidden}
-.yy-full .yf-photo>img {width:100%;height:auto;display:block;object-fit:contain;aspect-ratio:var(--yf-media-ratio, 3 / 2);background:white}
-.yy-full .yf-grid-four {--yf-media-ratio:4 / 3}
-.yy-full .yf-grid-three {--yf-media-ratio:16 / 10}
-/* A section owns its frame; technical drawings use contain in the same frame. */
-.yy-full .yf-section {--yf-section-ratio:3 / 2}
-.yy-full .yf-section .yf-photo>img {display:block;width:100%;height:auto;aspect-ratio:var(--yf-section-ratio);object-fit:contain;background:#fff}
-.yy-full #product-views {--yf-section-ratio:1}
-.yy-full #production,.yy-full #customization {--yf-section-ratio:4 / 3}
+/* Each section exports matching photo dimensions. Size frames from the actual image. */
+.yy-full .yf-section .yf-photo>img {display:block;width:100%;max-width:100%;height:auto;aspect-ratio:auto;flex:none;padding:0;margin:0}
 .yy-full .yf-section .yf-photo {min-width:0;margin:0}
 .yy-full .yf-uniform-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--yf-gap);align-items:stretch}
 @container yy-full (max-width:760px){.yy-full .yf-uniform-grid{grid-template-columns:minmax(0,1fr)}}
 .yy-full .yf-photo figcaption {padding:12px 16px;border-top:1px solid var(--yf-frame);background:#fff}
 .yy-full .yf-product-views {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--yf-gap)}
-.yy-full .yf-product-views .yf-photo {--yf-media-ratio:1;align-self:stretch}
+.yy-full .yf-product-views .yf-photo {align-self:stretch}
 .yy-full .yf-feature-notes {margin-top:var(--yf-gap)}
 .yy-full .yf-feature-notes .yf-card {min-width:0}
 .yy-full .yf-tech-strip {margin-top:var(--yf-gap)}
@@ -132,6 +126,8 @@
  .yy-full .yf-photo figcaption {padding:10px 12px}
 }
 .yy-full .epd-company-intro,.yy-full .epd-product-section {padding:clamp(28px,4cqi,52px) clamp(18px,3.5cqi,48px);border-bottom:1px solid var(--yy-line)}
+.yy-full .epd-company-intro h2 {margin-bottom:24px}
+.yy-full .epd-company-intro h2::after {content:"";display:block;width:46px;height:3px;margin-top:12px;background:var(--yy-primary)}
 .yy-full .epd-company-intro p {max-width:85ch}
 .yy-full .epd-product-section {background:var(--yy-soft)}
 .yy-full .epd-section-intro {margin:12px 0 24px;color:var(--yy-muted)}
@@ -146,6 +142,7 @@
 {{HERO_BLOCK}}
 {{DETAIL_SECTIONS}}
 <div class="epd-company-intro">
+<h2>Company Introduction</h2>
 <p>Yiant Technologies is a Guangzhou-based supplier serving battery pack manufacturers, electrical equipment companies and industrial customers worldwide. Our portfolio covers insulation paper, adhesive tapes, EVA foam, Mylar, nickel strips, connectors, battery cases, battery indicators and epoxy fiberglass laminates.</p>
 <p>Supported by specialized production and converting resources, we provide material selection, die cutting, slitting, CNC machining, sampling and coordinated supply services. Our goal is to help customers simplify sourcing while improving product consistency and project efficiency.</p>
 </div>

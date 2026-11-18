@@ -111,7 +111,14 @@
 .yy-full .yf-photo>img {width:100%;height:auto;display:block;object-fit:contain;aspect-ratio:var(--yf-media-ratio, 3 / 2);background:white}
 .yy-full .yf-grid-four {--yf-media-ratio:4 / 3}
 .yy-full .yf-grid-three {--yf-media-ratio:16 / 10}
-.yy-full .yf-photo.yf-technical>img {height:auto;aspect-ratio:auto}
+/* A section owns its frame; technical drawings use contain in the same frame. */
+.yy-full .yf-section {--yf-section-ratio:3 / 2}
+.yy-full .yf-section .yf-photo>img {display:block;width:100%;height:auto;aspect-ratio:var(--yf-section-ratio);object-fit:contain;background:#fff}
+.yy-full #product-views {--yf-section-ratio:1}
+.yy-full #production,.yy-full #customization {--yf-section-ratio:4 / 3}
+.yy-full .yf-section .yf-photo {min-width:0;margin:0}
+.yy-full .yf-uniform-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--yf-gap);align-items:stretch}
+@container yy-full (max-width:760px){.yy-full .yf-uniform-grid{grid-template-columns:minmax(0,1fr)}}
 .yy-full .yf-photo figcaption {padding:12px 16px;border-top:1px solid var(--yf-frame);background:#fff}
 .yy-full .yf-product-views {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--yf-gap)}
 .yy-full .yf-product-views .yf-photo {--yf-media-ratio:1;align-self:stretch}
@@ -131,11 +138,21 @@
  .yy-full .yf-product-views {grid-template-columns:minmax(0,1fr)}
  .yy-full .yf-photo figcaption {padding:10px 12px}
 }
+.yy-full .epd-product-section {padding:clamp(28px,4cqi,52px) clamp(18px,3.5cqi,48px);background:var(--yy-soft);border-bottom:1px solid var(--yy-line)}
+.yy-full .epd-section-intro {margin:12px 0 24px;color:var(--yy-muted)}
+.yy-full .epd-report-grid {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--yf-gap)}
+.yy-full .epd-report-grid article {min-width:0;background:white;border:1px solid var(--yf-frame);padding:8px}
+.yy-full .epd-report-grid img {width:100%;aspect-ratio:1200/1697;object-fit:contain}
+@container yy-full (max-width:1050px){.yy-full .epd-report-grid {grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container yy-full (max-width:500px){.yy-full .epd-report-grid {grid-template-columns:minmax(0,1fr)}}
 
 </style>
 <div class="yy-product yy-full">
 {{HERO_BLOCK}}
 {{DETAIL_SECTIONS}}
+<section class="epd-product-section"><h2>Material Test Reports &amp; Compliance</h2><p class="epd-section-intro">
+     Selected third-party test reports for insulation paper supplied within our product portfolio.
+   </p><div class="epd-report-grid"><article><img src="/uploadfile/2026/07/16/1784195370796002.webp" alt="RoHS test report for insulation paper" id="ic53dq"></article><article><img src="/uploadfile/2026/07/16/1784195368896591.webp" alt="Chinese RoHS test report for insulation paper" id="i91ixf"></article><article><img src="/uploadfile/2026/07/16/1784195365809483.webp" alt="California Proposition 65 test report for insulation paper" id="ifjxks"></article><article><img src="/uploadfile/2026/07/16/1784195362204691.webp" alt="Halogen test report for insulation paper" id="iu02e6"></article></div></section>
 <section class="yf-section yf-faq" id="product-faq" data-product-faq="true">
   <header class="yf-head"><div><p class="yf-kicker">Product support</p><h2>Frequently Asked Questions</h2></div></header>
   <div class="yf-faq-grid">

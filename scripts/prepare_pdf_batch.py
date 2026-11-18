@@ -8,7 +8,7 @@ from pathlib import Path
 import shutil
 from extract_pdf_assets import extract
 
-GENERATED = 'title remark thumb scenario_image images pro_fields content seo_title1 seo_desc file_name'.split()
+GENERATED = 'title remark thumb images pro_fields content seo_title1 seo_desc file_name'.split()
 
 
 def sha(path):
@@ -25,14 +25,16 @@ def prepare(files, template, run_dir):
     run_dir.mkdir(parents=True, exist_ok=True)
     manifest_path = run_dir / 'batch-manifest.json'
     previous = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
+    if previous and previous.get('input_mode') != 'pdf_batch':
+        raise ValueError('Use a separate run directory for PDF input')
     template_unchanged = previous.get('template_sha256') == sha(template)
     with template.open(encoding='utf-8-sig', newline='') as f:
         reader = csv.DictReader(f)
         rows = list(reader)
         headers = reader.fieldnames or []
     if len(headers) != len(set(headers)) or not set(GENERATED).issubset(headers):
-        raise ValueError('Template needs unique headers and all ten generated product columns')
-    configurations = [{k: r.get(k, '') for k in headers if k not in GENERATED + ['link']} for r in rows]
+        raise ValueError('Template needs unique headers and all nine generated product columns')
+    configurations = [{k: r.get(k, '') for k in headers if k not in GENERATED + ['link','scenario_image']} for r in rows]
     shared = len(configurations) <= 1 or all(r == configurations[0] for r in configurations)
     old = {p.get('source_sha256'): p for p in previous.get('products', []) if p.get('source_sha256')}
     products, inputs, seen = [], [], {}

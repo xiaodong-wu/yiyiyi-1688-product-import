@@ -9,7 +9,7 @@ https://www.wire-cablemanufacturer.com/uploadfile/2026/11/13/20261113144213uKR1x
 ## 生成前
 
 查看参考图和实际 SKU 清晰原图，再调用内置 imagegen。外形、孔数/孔距、表面材质和文字来自真实图与核验数据。缺实际照片，不生成拟真商品封面。
-默认 1:1，建议高清尺寸；没有确认品牌就省略品牌位，不猜 Logo。默认封面=图库首张=详情首图；明确需要两个版本时才分别生成。
+默认 1:1，建议高清尺寸；品牌标识固定使用 [官方 PNG](../assets/yiant-logo.png)，不要猜写 YY 或以文字替代。默认封面=图库首张=详情首图；明确需要两个版本时才分别生成。
 
 ## 提示词
 
@@ -23,7 +23,7 @@ Image 2: layout inspiration only, cover-layout-reference.webp.
 Create a clean white-background industrial product cover. Preserve the real product's geometry, hole count and pattern, edges, proportions, finish and material appearance from Image 1. Do not substitute the cable product in Image 2.
 Use a prominent dark-blue English heading, restrained orange specification accent, large crisp product close-up and compact bottom specification row. Keep ample white space.
 Exact English text: [approved short title]; [verified model]; [verified specifications and units].
-Brand: [confirmed English brand, or omit all brand marks].
+Leave the brand area blank. Composite the supplied official PNG after generation, preserving its proportions and colors.
 Only use supplied facts. Do not add ratings, purity, certifications, holes or dimension arrows unless verified. No Chinese text, third-party logos, watermark, lifestyle scenery or invented accessories. Do not copy product text from the layout reference.
 ```
 
@@ -38,3 +38,7 @@ Only use supplied facts. Do not add ratings, purity, certifications, holes or di
 ## 完整详情插图
 
 白底规则适用于 `images` 产品图库，不用于排除 PDF 详情中的设备、材料、应用或定制照片。这些照片按原模块放入详情，保留真实背景与来源语境，登记到 `detail_images`。中文标题与说明重排为英文 HTML；显示原拼图的照片子区域时可用 CSS 图片视窗，保持原图像素与几何，并在覆盖记录中保存坐标。技术图纸不生成替代图、不改尺寸，未确认的单位和规格不能转写为已验证参数。
+
+## 品牌和板块画布
+
+官方来源：https://yyy.szsdzx.com/uploadfile/2026/07/17/20260717094048KO2D1b.png 。使用随技能附带的透明原件；所有封面、组图和详情图的徽标都在空白安全区等比排入，不能盖住产品和技术图纸。版式参考中的商标不进入素材；不要将品牌标识当作材质或认证证据。先选每个 section 的目标像素尺寸，包括跨排的照片与技术图；同板块同宽高、同一网格列宽。用 contain 和白色补边保留内容；同一张图在不同画布使用时保存独立变体。发布前逐节核对实际 WebP 尺寸与 1400/1000/390px 渲染边框，浮点舍入允许 1px；不以 CSS 拉伸冒充统一输出。

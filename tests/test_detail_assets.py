@@ -33,8 +33,8 @@ class DetailAssets(unittest.TestCase):
 
     def errors(self):
         if 'data-product-faq' not in self.body:
-            self.body += fixture()
-        row = dict(title='Example',remark='Example product.',thumb=self.cover,scenario_image='',
+            self.body += validator.REPORT_HTML + fixture()
+        row = dict(title='Example',remark='Example product.',thumb=self.cover,
                    images=self.cover+'|Product cover',pro_fields='Material: Steel',content=self.body,
                    seo_title1='Example',seo_desc='Example product.',file_name='example',IMGBB_API_KEY='')
         p=self.root/'product.csv'

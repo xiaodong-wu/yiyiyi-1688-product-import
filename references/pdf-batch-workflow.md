@@ -33,7 +33,6 @@ python3 scripts/prepare_pdf_batch.py "/path/product-a.pdf" "/path/product-b.pdf"
     "title": "English product title",
     "remark": "Verified English summary.",
     "thumb": "images/product-slug/01-cover.webp",
-    "scenario_image": "",
     "images": "images/product-slug/01-cover.webp|English image alt",
     "pro_fields": "Material: verified material",
     "content": "英文详情HTML片段",
@@ -61,6 +60,8 @@ python3 scripts/validate_output.py /path/output/products_completed.csv \
   --batch-manifest /path/run/batch-manifest.json
 ```
 
-合成器仅读取 ready 产品，保留用户 11 列或自定义表头及顺序，不读取 link 抓网页。导出 UTF-8 无 BOM，标准表头不加引号，含逗号/双引号/换行的数据字段规范转义。密钥只在内存和用户指定范围的最终 CSV 中；不输出含密钥的断言差异、JSON、工作簿、截图或 ZIP。完成 CSV 使用独占创建，不覆盖上一批结果；源模板变更会停止合成，需先重新核对配置。
+合成器仅读取 ready 产品，按工作表字段顺序写入，移除废弃场景图列；PDF 模式不调用链接 API。导出 UTF-8 无 BOM，标准表头不加引号，含逗号/双引号/换行的数据字段规范转义。两种密钥只在输入表和请求内存中；最终 CSV 中值为空；不输出含密钥的断言差异、JSON、工作簿、截图或 ZIP。完成 CSV 使用独占创建，不覆盖上一批结果；源模板变更会停止合成，需先重新核对配置。
 
 输出旁的 `products_completed.mapping.json` 给出每个 PDF 对应的输出行、模板行、slug，以及跳过/重复项。不把待处理资料伪装成产品空行。最终报告实际 PDF 数、完成产品数、重复/失败数、图片复用或新生成状态；真实样本只有一份时如实称单产品测试，多输入逻辑测试另列为合成测试。
+
+详情结尾固定为：[英文报告区](../assets/material-reports.html) → 本品六条英文 FAQ。不要生成 Buying notes & precautions、付款、退换货、售后或签收条款区。保留官方报告原文、图片顺序、站内路径、alt 和 ID；独立预览可以补全站点 https://yyy.szsdzx.com。报告仅指产品组合中的绝缘纸，不属于当前 SKU 的认证。报告原件不加品牌水印、不裁剪，通过 contain 等大展示。

@@ -7,7 +7,7 @@ import unittest
 spec = importlib.util.spec_from_file_location('validator', Path(__file__).resolve().parents[1] / 'scripts/validate_output.py')
 validator = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(validator)
-HEADERS = 'title remark thumb scenario_image images pro_fields content seo_title1 seo_desc file_name IMGBB_API_KEY'.split()
+HEADERS = 'link SANDBASE_API_KEY IMGBB_API_KEY title remark thumb images pro_fields content seo_title1 seo_desc file_name'.split()
 
 
 class CsvFormat(unittest.TestCase):

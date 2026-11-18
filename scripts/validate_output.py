@@ -9,10 +9,10 @@ import json
 from pathlib import Path
 from PIL import Image
 import re
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlsplit
 
-GENERATED = 'title remark pro_fields content seo_title1 seo_desc file_name thumb scenario_image images'.split()
-HEADERS = ['link', 'template', 'IMGBB_API_KEY'] + GENERATED
+GENERATED = 'title remark pro_fields content seo_title1 seo_desc file_name thumb images'.split()
+HEADERS = ['link', 'template', 'SANDBASE_API_KEY','IMGBB_API_KEY'] + GENERATED
 CJK = re.compile(r'[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\U00020000-\U000323af]')
 
 
@@ -122,6 +122,60 @@ def local_file(root, value):
     return target if data[:4] == b'RIFF' and data[8:12] == b'WEBP' else None
 
 
+REPORT_HTML = (Path(__file__).resolve().parents[1]/'assets/material-reports.html').read_text().strip()
+REPORT_HOST = 'https://yyy.szsdzx.com'
+
+
+def check_reports(content, standalone=False):
+    fragment = content.replace('src="'+REPORT_HOST+'/uploadfile/', 'src="/uploadfile/') if standalone else content
+    canonical = re.sub(r'\s+', ' ', REPORT_HTML)
+    flat = re.sub(r'\s+', ' ', fragment)
+    errors = []
+    if flat.count(canonical)!=1 or flat.count('class="epd-product-section"')!=1:
+        errors.append('Exactly one official English insulation-paper report section is required')
+    elif not re.match(r'\s*<section\b[^>]*\bdata-product-faq=["\']true["\']', flat.split(canonical,1)[1],re.I):
+        errors.append('Official reports must precede the product FAQ')
+    if re.search(r'<section\b[^>]*\bid=["\']ordering["\']|Buying notes\s*(?:&amp;|&)\s*precautions',fragment,re.I):
+        errors.append('Retired ordering terms found')
+    return errors
+
+
+class SectionImages(HTMLParser):
+    """Group images by their nearest section, including images in separate rows."""
+    def __init__(self, content):
+        super().__init__()
+        self.stack, self.groups = [], []
+        self.feed(content)
+
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        if tag == 'section':
+            self.groups.append((a.get('id') or str(len(self.groups)+1), []))
+            self.stack.append(self.groups[-1][1])
+        elif tag == 'img' and self.stack:
+            self.stack[-1].append(a.get('src',''))
+
+    def handle_endtag(self, tag):
+        if tag == 'section' and self.stack:
+            self.stack.pop()
+
+
+def section_size_errors(content, files):
+    errors = []
+    for name, urls in SectionImages(content).groups:
+        if len(urls) < 2: continue
+        sizes = set()
+        for url in set(urls):
+            f = files.get(url)
+            if not f: continue  # Unregistered or missing assets have separate errors.
+            try:
+                with Image.open(f) as im: sizes.add(im.size)
+            except OSError:
+                errors.append('Cannot decode section image: '+name)
+        if len(sizes)>1: errors.append('Different image dimensions in section: '+name)
+    return errors
+
+
 def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
     root = csv_path.parent
     errors = []
@@ -153,15 +207,17 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
     def fail(n, message): errors.append(f'row {n}: {message}')
     missing = set(GENERATED) - set(headers)
     if missing: errors.append('Missing headers: ' + ', '.join(sorted(missing)))
+    if 'scenario_image' in headers: errors.append('Retired scenario_image field found in output')
     if not rows: errors.append('No product rows; a template is not a completed product export')
     products = json.loads(manifest_path.read_text(encoding='utf-8')).get('products', [])
     records = {x['file_name']: x for x in products}
     if len(records) != len(products): errors.append('Duplicate product slugs in image manifest')
     seen = set()
     for n, row in enumerate(rows, 2):
+        if any(row.get(key) for key in ('SANDBASE_API_KEY','IMGBB_API_KEY')): fail(n,'Credential columns must be blank in the exported CSV')
         for field in GENERATED:
             value = row.get(field) or ''
-            if not value.strip() and field != 'scenario_image': fail(n, f'{field} is empty')
+            if not value.strip(): fail(n, f'{field} is empty')
             if CJK.search(html.unescape(value)): fail(n, f'{field} contains Chinese text')
             if re.search(r'\b(?:Xinbada|Lifeworth|ZHENGFENG)\b', value, re.I):
                 fail(n, f'{field} contains inherited branding')
@@ -176,9 +232,10 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
         if any(re.match(r'^\s*(?:[•●▪*+\-]|\d+[.)])\s*', s) for s in row.get('pro_fields', '').splitlines()):
             fail(n, 'pro_fields has leading bullets or numbering')
         content = row.get('content', '')
+        for error in check_reports(content): fail(n,error)
         for error in faq_errors(content): fail(n, error)
         if re.search(r'\{\{.+?\}\}|\bTODO\b|\bPLACEHOLDER\b', content): fail(n, 'Unfilled content template')
-        parsed = HTMLImages(content)
+        parsed = HTMLImages(content.replace(REPORT_HTML,''))
         if parsed.unsafe: fail(n, 'Executable or embedded content is not allowed')
         pairs = []
         for line in row.get('images', '').splitlines():
@@ -196,8 +253,6 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
         if len(set(detail_urls)) != len(detail_urls): fail(n, 'Duplicate detail asset references')
         if gallery_urls.intersection(detail_urls): fail(n, 'Shared gallery assets must not be duplicated in detail_images')
         allowed = gallery_urls | set(detail_urls)
-        if row.get('scenario_image') and row['scenario_image'] not in gallery_urls:
-            fail(n, 'scenario_image is outside the product gallery')
         if not parsed.images or parsed.images[0][0] != row.get('thumb'):
             fail(n, 'First detail image is not the cover')
         for url, alt in pairs + parsed.images:
@@ -245,7 +300,8 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
                 fail(n, 'Invalid detail asset role')
             if entry.get('origin') not in ('source_detail', 'text_localized', 'background_edited'):
                 fail(n, 'Detail asset must come from the supplied product PDF')
-            if not entry.get('source') or not entry.get('source_pages') or not entry.get('context'):
+            if (not entry.get('source') or not entry.get('context') or not (entry.get('source_pages') or
+                    (entry.get('source_panel') and str(entry['source']).startswith('https://') and re.fullmatch(r'[a-f0-9]{64}',str(entry.get('source_sha256','')))))):
                 fail(n, 'Detail asset needs PDF provenance and context')
             if entry.get('visual_reviewed') is not True or entry.get('context_reviewed') is not True:
                 fail(n, 'Detail asset visual/context verification is incomplete')
@@ -253,6 +309,9 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
             if not local_file(root, entry.get('path', '')): fail(n, 'Detail asset local WebP is missing')
             if mode == 'remote' and not direct(url): fail(n, 'Detail asset must have an ImgBB WebP Direct link')
             if url not in used_detail_urls: fail(n, 'Approved detail asset is not used in the content')
+        media_files = {e.get('direct_url' if mode=='remote' else 'path'):local_file(root,e.get('path',''))
+                       for e in entries + detail_entries}
+        for error in section_size_errors(content,media_files): fail(n,error)
         folder = root / 'images' / slug
         if folder.exists() and any(x.is_file() and x.suffix != '.webp' for x in folder.iterdir()):
             fail(n, 'Final image folder includes non-WebP files')
@@ -271,7 +330,9 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
                 fail(n, 'Standalone detail page needs lang=en')
             if not re.search(r'<meta\b[^>]*\bname=[\"\']viewport[\"\']', page_text, re.I):
                 fail(n, 'Standalone detail page needs a viewport meta tag')
-            for url, alt in HTMLImages(page_text).images:
+            for error in check_reports(page_text, standalone=True): fail(n,error)
+            page_without_reports = page_text.replace(REPORT_HTML.replace('src="/uploadfile/','src="'+REPORT_HOST+'/uploadfile/'),'').replace(REPORT_HTML,'')
+            for url, alt in HTMLImages(page_without_reports).images:
                 if mode == 'remote':
                     if url not in allowed: fail(n, 'Standalone detail image has no approved asset provenance')
                 else:
@@ -281,11 +342,17 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
                         fail(n, 'Standalone detail has an invalid relative image reference')
     if original:
         old_headers, old_rows = read_csv(original)
-        if headers != old_headers: errors.append('Original/output column names or order differ')
+        if headers != [h for h in old_headers if h!='scenario_image']: errors.append('Original/output column names or order differ')
         if len(old_rows) != len(rows): errors.append('Original/output row count differs')
         for n, (old, new) in enumerate(zip(old_rows, rows), 2):
             for key in old_headers:
-                if key not in GENERATED and old.get(key) != new.get(key):
+                if key=='link' and old.get(key)!=new.get(key):
+                    u=urlsplit(old.get(key,'').strip())
+                    if (u.scheme not in ('http','https') or u.netloc.lower()!='detail.1688.com'
+                        or not re.fullmatch(r'/offer/[1-9][0-9]{0,19}\.html/?',u.path)
+                        or new.get(key)!='https://detail.1688.com'+u.path.rstrip('/')):
+                        fail(n, 'Read-only input link refers to a different offer')
+                if key not in GENERATED + ['SANDBASE_API_KEY','IMGBB_API_KEY','scenario_image','link'] and old.get(key) != new.get(key):
                     fail(n, f'Read-only input field changed: {key}')
     if batch_manifest:
         batch = json.loads(batch_manifest.read_text(encoding='utf-8'))
@@ -293,10 +360,10 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
         template_headers, template_rows = read_csv(template)
         if hashlib.sha256(template.read_bytes()).hexdigest() != batch['template_sha256']:
             errors.append('Batch template changed since preparation')
-        if headers != template_headers or headers != batch['headers']:
-            errors.append('PDF batch column names or order differ from the input template')
+        if headers != [h for h in template_headers if h!='scenario_image'] or template_headers != batch['headers']:
+            errors.append('Batch column names or order differ from the input template')
         ready = [p for p in batch['products'] if p['status'] == 'ready']
-        if len(ready) != len(rows): errors.append('Output count differs from ready PDF count')
+        if len(ready) != len(rows): errors.append('Output count differs from ready product count')
         for n, (product, row) in enumerate(zip(ready, rows), 2):
             record_path = (batch_manifest.parent / product['product_file']).resolve()
             if not record_path.is_relative_to(batch_manifest.parent.resolve()):
@@ -304,15 +371,20 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
                 continue
             record = json.loads(record_path.read_text(encoding='utf-8'))
             if record.get('source_sha256') != product.get('source_sha256') or record.get('reviewed') is not True:
-                fail(n, 'Product source or review does not match the PDF')
+                fail(n, 'Product source or review does not match the source')
             config_number = product.get('template_row')
             config = template_rows[config_number - 2] if isinstance(config_number, int) and 2 <= config_number <= len(template_rows) + 1 else {}
             if template_rows and not config: fail(n, 'Invalid template configuration mapping')
+            if batch.get('input_mode')=='link_batch':
+                if record.get('verified_source_url')!=product.get('source_file') or not record.get('verified_source_url'):
+                    fail(n,'Reviewed URL differs from source')
+                if not records.get(row.get('file_name'),{}).get('carousel_sources'):
+                    fail(n,'Link batch needs original carousel inventory')
             for key in headers:
                 expected = (record.get('row', {}).get(key, '') if key in GENERATED else
-                            record.get('verified_source_url', '') if key == 'link' else config.get(key, ''))
+                            record.get('verified_source_url', '') if key == 'link' else '' if key in ('SANDBASE_API_KEY','IMGBB_API_KEY') else config.get(key, ''))
                 if row.get(key, '') != expected:
-                    fail(n, 'PDF product or template configuration differs in field: ' + key)
+                    fail(n, 'Product or template configuration differs in field: ' + key)
     return errors, len(rows)
 
 

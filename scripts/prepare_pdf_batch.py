@@ -34,7 +34,7 @@ def prepare(files, template, run_dir):
         headers = reader.fieldnames or []
     if len(headers) != len(set(headers)) or not set(GENERATED).issubset(headers):
         raise ValueError('Template needs unique headers and all nine generated product columns')
-    configurations = [{k: r.get(k, '') for k in headers if k not in GENERATED + ['link','scenario_image']} for r in rows]
+    configurations = [{k: r.get(k, '') for k in headers if k not in GENERATED + ['link', 'template', 'scenario_image']} for r in rows]
     shared = len(configurations) <= 1 or all(r == configurations[0] for r in configurations)
     old = {p.get('source_sha256'): p for p in previous.get('products', []) if p.get('source_sha256')}
     products, inputs, seen = [], [], {}

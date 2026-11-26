@@ -21,7 +21,7 @@ const sheet = workbook.worksheets.getItemAt(0);
 const width = manifest.headers.length;
 const inputHeaders = sheet.getRangeByIndexes(0,0,1,width).values[0];
 assert.deepEqual(inputHeaders,manifest.headers);
-const headers=inputHeaders.filter(h=>h!=='scenario_image');
+const headers = inputHeaders.filter(h => h !== 'template' && h !== 'scenario_image');
 assert(headers.every(h=>typeof h==='string' && h===h.trim() && !/[\uFEFF\u200B-\u200D\u2060\r\n]/u.test(h)), 'Header contains whitespace or invisible characters');
 const sourceRows = manifest.template_rows ? sheet.getRangeByIndexes(1,0,manifest.template_rows,width).values : [];
 const generated = 'title remark thumb images pro_fields content seo_title1 seo_desc file_name'.split(' ');
@@ -101,4 +101,4 @@ await fs.writeFile(mappingPath,JSON.stringify({input_mode:manifest.input_mode,ro
   skipped:manifest.products.filter(x=>x.status!=='ready').map(x=>({product_id:x.product_id,source_file:x.source_file,status:x.status,reason:x.reason||''})),
   blocked_inputs:manifest.inputs.filter(x=>x.status==='blocked'),
   duplicates:manifest.inputs.filter(x=>x.status==='duplicate')},null,2)+'\n');
-console.log(`Exported ${rows.length} products with ${headers.length} original columns; source template unchanged; credentials not logged.`);
+console.log(`Exported ${rows.length} products with ${headers.length} import columns; source template unchanged; credentials not logged.`);

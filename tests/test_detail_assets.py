@@ -76,7 +76,7 @@ class DetailAssets(unittest.TestCase):
 
     def labeled_carousel(self):
         source = 'https://example.test/white-ring.jpg'
-        label = '豆包AI生成'
+        label = '\u8c46\u5305AI\u751f\u6210'
         self.extra_manifest = {'carousel_sources': [{'url': source, 'status': 'used', 'source_ai_label': label}]}
         entry = dict(self.gallery[0], path='images/example/ring.webp', role='gallery', source=source,
                      alt='White ring illustration', origin='source_based_illustration', white_background=True,

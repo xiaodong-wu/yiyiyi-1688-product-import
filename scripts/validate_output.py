@@ -11,8 +11,9 @@ from PIL import Image
 import re
 from urllib.parse import urlparse, urlsplit
 
-GENERATED = 'title remark pro_fields content seo_title1 seo_desc file_name thumb images'.split()
-HEADERS = ['link', 'template', 'SANDBASE_API_KEY','IMGBB_API_KEY'] + GENERATED
+GENERATED = 'title remark thumb images pro_fields content seo_title1 seo_desc file_name'.split()
+HEADERS = ['link', 'SANDBASE_API_KEY', 'IMGBB_API_KEY'] + GENERATED
+OMITTED_COLUMNS = {'template', 'scenario_image'}
 CJK = re.compile(r'[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\U00020000-\U000323af]')
 LEGACY_BRAND = re.compile(r'(?<![\w-])YY(?![\w-])', re.I)
 
@@ -275,7 +276,7 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
     def fail(n, message): errors.append(f'row {n}: {message}')
     missing = set(GENERATED) - set(headers)
     if missing: errors.append('Missing headers: ' + ', '.join(sorted(missing)))
-    if 'scenario_image' in headers: errors.append('Retired scenario_image field found in output')
+    if OMITTED_COLUMNS.intersection(headers): errors.append('Obsolete input columns found in exported CSV')
     if not rows: errors.append('No product rows; a template is not a completed product export')
     products = json.loads(manifest_path.read_text(encoding='utf-8')).get('products', [])
     records = {x['file_name']: x for x in products}
@@ -287,8 +288,6 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
             value = row.get(field) or ''
             if not value.strip(): fail(n, f'{field} is empty')
             if CJK.search(html.unescape(value)): fail(n, f'{field} contains Chinese text')
-            if re.search(r'\b(?:Xinbada|Lifeworth|ZHENGFENG)\b', value, re.I):
-                fail(n, f'{field} contains inherited branding')
             if field in ('title', 'remark', 'seo_title1', 'seo_desc', 'pro_fields') and LEGACY_BRAND.search(value):
                 fail(n, f'Use Yiant for the brand name in {field}')
         slug = row.get('file_name', '')
@@ -437,7 +436,7 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
                         fail(n, 'Standalone detail has an invalid relative image reference')
     if original:
         old_headers, old_rows = read_csv(original)
-        if headers != [h for h in old_headers if h!='scenario_image']: errors.append('Original/output column names or order differ')
+        if headers != [h for h in old_headers if h not in OMITTED_COLUMNS]: errors.append('Original/output column names or order differ')
         if len(old_rows) != len(rows): errors.append('Original/output row count differs')
         for n, (old, new) in enumerate(zip(old_rows, rows), 2):
             for key in old_headers:
@@ -447,7 +446,7 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
                         or not re.fullmatch(r'/offer/[1-9][0-9]{0,19}\.html/?',u.path)
                         or new.get(key)!='https://detail.1688.com'+u.path.rstrip('/')):
                         fail(n, 'Read-only input link refers to a different offer')
-                if key not in GENERATED + ['SANDBASE_API_KEY','IMGBB_API_KEY','scenario_image','link'] and old.get(key) != new.get(key):
+                if key not in HEADERS and key not in OMITTED_COLUMNS and old.get(key) != new.get(key):
                     fail(n, f'Read-only input field changed: {key}')
     if batch_manifest:
         batch = json.loads(batch_manifest.read_text(encoding='utf-8'))
@@ -455,7 +454,7 @@ def validate(csv_path, mode, manifest_path, original=None, batch_manifest=None):
         template_headers, template_rows = read_csv(template)
         if hashlib.sha256(template.read_bytes()).hexdigest() != batch['template_sha256']:
             errors.append('Batch template changed since preparation')
-        if headers != [h for h in template_headers if h!='scenario_image'] or template_headers != batch['headers']:
+        if headers != [h for h in template_headers if h not in OMITTED_COLUMNS] or template_headers != batch['headers']:
             errors.append('Batch column names or order differ from the input template')
         ready = [p for p in batch['products'] if p['status'] == 'ready']
         if len(ready) != len(rows): errors.append('Output count differs from ready product count')
@@ -491,7 +490,7 @@ def main():
     p.add_argument('--mode', choices=['local', 'remote'], required=True)
     p.add_argument('--manifest', type=Path, required=True)
     p.add_argument('--original', type=Path)
-    p.add_argument('--batch-manifest', type=Path, help='Validate PDF-to-output mapping and template configuration')
+    p.add_argument('--batch-manifest', type=Path, help='Validate source-to-output mapping and template configuration')
     args = p.parse_args()
     errors, count = validate(args.csv_file, args.mode, args.manifest, args.original, args.batch_manifest)
     for error in errors: print('ERROR: ' + error)

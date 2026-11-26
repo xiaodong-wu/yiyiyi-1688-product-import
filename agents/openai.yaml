@@ -1,4 +1,4 @@
 interface:
-  display_name: "壹移蚁 1688 产品导入"
-  short_description: "从表格链接和逐行密钥或产品 PDF 生成英文导入文件及白底图库"
-  default_prompt: "使用 $yiyiyi-1688-product-import 按表格各行的 1688 链接和密钥处理产品，生成英文 CSV、原图白底图库和独立详情；也支持指定 PDF。"
+  display_name: "Yiant 1688 Product Import"
+  short_description: "Build English Yiant imports from 1688 links or product PDFs"
+  default_prompt: "Use $yiyiyi-1688-product-import to turn my 1688 product spreadsheet or supplier PDFs into an English import CSV, product images and individual detail pages."

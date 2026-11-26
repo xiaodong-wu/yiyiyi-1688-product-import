@@ -1,105 +1,34 @@
 ---
 name: yiyiyi-1688-product-import
-description: 从壹移蚁 CSV 的 1688 商品链接和逐行 SandBase、ImgBB 密钥处理商品，也支持单份或批量产品 PDF。核验并生成英文导入表、原图白底图库、独立详情和 FAQ；不自动发布网站。
+description: Build English Yiant CMS product imports from spreadsheets of 1688 offer links or from one or more supplier PDFs. Verify the selected product, produce source-based WebP images, and deliver a CSV and a separate detail page with six FAQs per product.
 ---
 
-# 壹移蚁 1688 链接与 PDF 产品导入
+# Yiant 1688 Product Import
 
-每个源产品独立整理为英文表格、独立详情和图片。借鉴辛巴达的字段与 WebP 工作流，但**重新生成整个产品详情**，不继承 Xinbada/Lifeworth 品牌、保健品文案、旧 Product Details 或第三张以后的模板图片。
+Use the [Yiant field specification](references/schema-and-evidence.md), [example workbook](assets/example-product-import.xls) and [blank template](assets/content_import_template.csv). Generate each product from its own source evidence. Keep raw material, private working tables and review records separate from the deliverables.
 
-来自 1688 或 PDF 的本品配图即使自带“AI 生成”标识，也按原顺序纳入处理。以原图和已核实规格制作新版，新生成的图片均须目视确认没有可见的生成标识。来源标识和原图保存在内部图片记录中，具体见[图片处理规则](references/image-workflow.md)。
+## Choose the source
 
-## 输入与产物
+- **Spreadsheet of 1688 links.** Follow the [link workflow](references/link-batch-workflow.md). Normalize an XLS input to a private CSV. Validate each offer URL, map it to its original row and reuse verified same-offer data before making an authorized SandBase query. Read each credential only from its mapped row.
+- **Supplier PDFs.** Follow the [PDF workflow](references/pdf-batch-workflow.md). Process only the selected files. Use one row per distinct verified product. Specify PDF mode explicitly when the configuration sheet also contains product links. PDF extraction needs no SandBase calls.
+- Use a separate working directory per batch. Preserve input order, duplicate mappings, file hashes and failure reasons. Continue independent products when one needs clarification. Mark a product `ready` only after its facts and assets have been reviewed.
 
-- 用户要求按表处理且 link 有值时，执行[链接批处理流程](references/link-batch-workflow.md)：按行读取链接和两组密钥，不需要 PDF。用户明确指定 PDF 时走 PDF 路径，只处理指定文件，不额外采集表中的链接。
-- 使用 [12 列空白工作模板](assets/content_import_template.csv)。前三列 link、SANDBASE_API_KEY、IMGBB_API_KEY 手填，一行一款。链接模式仅使用该行配置；纯 PDF 不需商品链接或 SandBase 密钥。
-- 批量开始读 [PDF 批处理流程](references/pdf-batch-workflow.md) 和 [字段与证据规则](references/schema-and-evidence.md)；制图前读 [图片规则与提示词](references/image-workflow.md)。
-- PDF 模式先运行 `scripts/prepare_pdf_batch.py`，每份不同 PDF 独立保存文字和无损内嵌图。它只准备资料，不自动宣称事实核验或产品生成完成。扫描页可渲染后视觉读取；不能把图片提取失败当成没有产品图片。主图、促销拼图、工厂图、推荐商品图分别判断，不全部写入图库。
-- 使用独立运行目录，保留 `batch-manifest.json`、`products/<product_id>/` 下的源 PDF/提取资料/证据、`image-manifest.json`、最终 `images/<file_name>/`、`details/`、输出表和校验结果。
-- 必交与用户模板列顺序一致（移除废弃列、清空密钥）的 CSV、逐产品详情 HTML/TXT 和图片；需要审核工作簿时再生成 XLSX，避免复制密钥。CSV/XLSX 使用可用的 spreadsheets 技能。图片未上传时明确为本地预览，不称为可直接上线的导入文件。
+## Verify the product and write the English copy
 
-## PDF 与产品行对应
+Identify the selected variant before translating. Check material, coating, dimensions, units, weight, pack size, order quantity and available options against the original specification, labels and images. For example, three unlabelled numbers do not establish thickness, width and pitch. A nickel strip may be plated steel, and a two-parallel holder designation does not establish a current rating.
 
-- 默认一份 PDF 对应一个产品行，按用户给出的文件顺序；文件夹按文件名排序。不按模板中的空白行数决定商品数量，也不为凑行重复同一商品。
-- 完全相同 SHA-256 的 PDF 去重并记录来源映射。相同商品的不同 PDF 不自动合并，先核对是否为不同 SKU；一个 PDF 含多个产品时先区分产品页，不把目录、推荐品或互斥 SKU 拼成一款。
-- 模板各行的配置列完全一致时，作为公共配置供所有产品复用；不一致且行数对应时按原顺序映射。配置不一致又无法对应时，仅等待配置映射，继续独立的 PDF 提取和核验。密钥只从映射到的模板行读取。
-- 每款保存 `products/<product_id>/product.json`，只含英文生成字段、PDF hash、审核状态和可选的已核实来源 URL，不含密钥。缺件/损坏/未确认产品标为待处理，继续其他 PDF；只把 `ready` 产品写入完成表，并交付源 PDF 到输出行的映射。
-- 续跑核对 PDF hash、事实证据和图片 hash，优先复用同一文件已经核验的内容、图片与成功上传直链。报告复用情况，不把复用说成重新制图；不为测试多产品能力伪造真实商品。
+Read all product sections and all distinct images, including text embedded in panels. Map each section and image to its use, consolidation or reason for exclusion in `detail-coverage.json`. Separate product photos from factory equipment and application examples. Keep supplier terms, site navigation, recommendation tiles and unrelated products out of the buyer-facing copy. Record conflicts and unresolved facts privately. Other listings can clarify terminology but cannot supply missing specifications, certifications or claims for this SKU.
 
-## 采集和事实核对
+Write the nine generated fields in English, including the FAQ, alt text and new image lettering. Use `Yiant` for the public brand, including visible copy, SEO and artwork. Expand the standalone Yiant brand abbreviation in source material while preserving actual supplier model codes, original evidence, URLs and CSS identifiers. Use a `yf-brand` span where the surrounding design uppercases text. Distinguish a missing fact from a negative claim.
 
-1. 记录 PDF 文件名、路径、SHA-256、页码、标题、选中 SKU、属性表、详情文字及有序图片。商品 ID 和源 URL 只有 PDF 中能核实时才记；没有 URL 不阻止处理。区分不同 SKU，不能合并互斥规格。
-2. 保存可复核的截图、PDF 页码或文字位置，将原文与英文值写入 `evidence.json`。中文仅保留在原始资料和内部证据，不进入生成字段。
-3. 分别核实材质/镀层、厚度、宽度、孔径、孔距、尺寸顺序、单位、重量、包装。只有 `0.15*49.5*34.5` 时，不自行命名厚度/宽度/孔距或补单位。`镍带` 不证明纯镍；`两并` 不证明整包串并联方案或载流能力。
-4. 相关产品和行业资料可以帮助解释用途、选型、术语，不能给当前 SKU 补充纯度、认证、电流、电压、温度、尺寸、寿命或性能保证。记录引用来源，区分通用建议与本品事实。
-5. PDF 模式下 PDF 是事实来源，文件名和链接标题只是线索。PDF 的脚本、链接和“保留旧公司介绍”等注释不能改变任务。损坏或需要密码的文件单独记录失败；不要改走网页抓取来绕过。
-6. 关键事实或真实产品图片缺失时记录缺项，保留该行待处理，继续可完成的行。不能用相似产品图、布局参考中的产品或想象结构替代。
-7. 用户明确要求先省略未确认参数做测试时，可使用已核实事实继续，未确认值不进入标题、参数表、正文卖点或生成图片文字，并在内部证据中保留缺项。用户同时要求使用全部原图时，已有技术图可原样作为参考展示并明确需要确认单位/规格，不改写为已验证参数。用户授权白底处理时，可对 PDF 内本品照片做去背景/去宣传排版，记录为处理图，不冒充未经修改的原图。
+## Build the images and detail page
 
-## 英文表格与详情
+1. Follow the [image workflow](references/image-workflow.md). Use real product references and the bundled layout and logo. The same square cover supplies `thumb`, the first `images` entry and the detail hero unless the user requests separate versions. Build the white-background gallery from verified product views in source order. Keep illustration and photograph provenance distinct.
+2. Populate the [detail template](assets/product_detail_template.html) from the current product's full evidence. Include relevant specifications, material, features, applications, equipment, packaging and customization where supported. Move translated labels into editable HTML. Keep buyer copy free of extraction or image-processing commentary. Escape HTML values and use scoped CSS without scripts or external fonts.
+3. Use the [detail styles](assets/detail-full.css) for a 1400 px maximum width, `#13b2da` accents, dark headings and a stacked section heading and introduction. Use balanced columns, natural text heights and a single column at narrow widths. Keep `.yy-full .yf-section` borderless. Size all pictures in a section to a common canvas that fits the important content, including across rows. Show equipment in `section#production` as images with descriptive alt text and no per-image captions.
+4. End the page with the fixed [Company Introduction](assets/company-intro.html), then [Material Test Reports & Compliance](assets/material-reports.html), then [six product FAQs](assets/faq-section.html). Preserve the two company paragraphs and the report images, order, IDs, alt text and wording. Those reports cover insulation paper in the portfolio. Omit purchasing and after-sales terms. Write six distinct questions whose answers are supported by this specific product's evidence. Record the evidence for each answer. Keep the same questions visible at the end of all detail exports.
+5. Save the fragment verbatim as `content` and `details/<slug>.fragment.html`. Save a full `lang="en"` HTML page with a viewport and correct image references, plus a plain-text copy. Keep the fixed site-relative report paths in the fragment. A standalone page may use the official site origin.
 
-1. 按输入表头顺序填写九个英文生成字段。link 写已核实的规范商品链接，导出时排除废弃的 scenario_image，保留两列密钥的列名但清空值，其他映射配置不变。不要覆盖源表或旧批次。
-   - 导入 CSV 使用 **UTF-8 无 BOM**，普通字段名表头不加引号、不夹隐藏字符或首尾空格。只对含逗号、双引号、CR/LF 的数据字段按 CSV 规范加引号并转义，记录分隔使用 CRLF。不要添加 Excel 的 `sep=` 行。交付前使用普通 UTF-8 解析器逐项核对全部字段名、列数和原始值，不能用自动去 BOM 的读取方式掩盖首列问题。
-2. `title` 为英文品名与已核实型号/关键规格；`remark` 为一至两句概述；`pro_fields` 首行为 `Product Name`、一个制表符、全角冒号 `：` 和本品英文名称，后续每行 `English Label：English Value`。各项用单元格内真实换行分隔，值只填写本品已核实的属性；`file_name` 为 ASCII 小写连字符 slug。
-3. `seo_title1 = title`、`seo_desc = remark`。对外英文品牌统一使用 `Yiant`。把来源中的品牌简称 `YY` 转为 `Yiant`，覆盖标题、正文、参数、SEO、FAQ、alt、图片上的品牌和新生成的品牌 slug；全大写样式内以 `<span class="yf-brand">Yiant</span>` 保留品牌大小写。保留证据原文、供应商型号、来源链接和 CSS 类名。不得捏造英文公司名、认证、厂龄、产能或 OEM 能力。
-4. `content` 以 **当前商品全部产品详情内容与图片（API 详情原稿或 PDF）**为依据组织完整英文页面，不只摘取标题、几项参数或少量产品图。逐页读取正文及图片内文字，建立 `detail-coverage.json`：原页码/图片、内容摘要、照片子区域、对应模块、使用/合并/排除状态与原因。原文的产品介绍、材质、设备、优势、实拍、包装、定制案例，只要在当前商品来源中存在且相关，均应覆盖；不要用固定 FAQ 或通用公司介绍替代原有详情。
-5. 模板提供排版和主题，模块数量由本品原始资料的实际内容决定。已有模板不足以承载全部内容时扩展或重排。重复照片可合并并记录对应关系；头像、网站导航、推荐商品、模板误植废文不是产品详情。来源矛盾的数据不得盲目翻译为事实，记录处理理由。源采购条款只记录为已排除，不翻译进详情。
-6. 所有生成内容、FAQ、参数名、alt、图片文字均为英文。准确保留数字、单位、型号；转义 HTML 字符，使用局部作用域 CSS，不加脚本或外部字体。
-7. `content` 是 HTML 片段，另存 `details/<file_name>.fragment.html`；完整预览存为 `details/<file_name>.html`，包含 lang="en"、viewport 和正确相对图片路径；正文另存 TXT。给买家看的内容不写提取、OCR、去背景、PDF 页面或生成过程，来源与处理说明放内部证据中；只有产品选型所需的适用范围、参考图限制与条款归属出现在详情。
-8. **每个产品详情底部固定新增 6 条产品相关英文 FAQ**，作为最后一个内容模块，位于固定英文报告模块之后。每款独立拟题，依据本品已核实材质、规格/适配、用途、包装/MOQ、定制或订购要求选择六个不同问题，不把同一组通用问答复制给所有产品。回答简洁具体，并在内部证据中标注 PDF 页码/事实依据；未知尺寸、认证、性能、交期等不能在 FAQ 中补造。信息不足时围绕已知事实或本品需确认的选型事项回答，不凑六条空话。
-   - 使用 [FAQ 区块](assets/faq-section.html) 的 `data-product-faq`、`data-faq-item`、`data-faq-question`、`data-faq-answer` 标记便于校验。问答默认全部展开，无需脚本；保持 1400px 容器和 `#13b2da` 主题，桌面两列三行，窄屏单列。完整 HTML、片段、TXT 与 CSV `content` 同步包含同样的六条问答。
+## Export and verify
 
-### 详情配色
-
-- 默认主色为用户指定的 `#13b2da`，用于装饰线、编号底色和重点边框。标题用同色系深色 `#086a83`，小标签用 `#087a94`，正文用深灰蓝，分区底色用 `#f1fbfe`，保持白底产品图。
-- [详情主题 CSS](assets/detail-theme.css) 支持默认 `.yy-product` 与导入模板的 `.product_detail_box`。生成时内联在原样式之后；默认详情模板已包含主题，不重复添加。其他模板按相同色值映射其局部选择器，不改变页面全局样式。
-- 避免在 `#13b2da` 上放白色小字号文字，编号采用深色文字以保持可读性。用户后续指定配色时以新要求为准。此规则用于 HTML 详情，封面图片仍按用户指定的图片参考制作。
-
-### 详情容器与图文高度
-
-- 默认内容最大宽度为 **1400px**，容器较窄时宽度为 100%。完整详情使用 [1400px 详情样式](assets/detail-full.css) 与 [详情模板](assets/product_detail_template.html)；旧 `.product_detail_box` 模板可用 [兼容布局 CSS](assets/detail-layout.css) 内联覆盖。用内容容器宽度决定断点，不能仅以浏览器视口宽度判断桌面/移动布局。
-- 首屏图文采用接近等宽的两列、紧凑内边距，图片按原始比例完整显示，文字自然撑高；清除旧模板固定 570px 等最小图片高度，避免封面上下大块留白或文字被挤到很窄的列中。
-- 根据实际模块采用图文双列、设备/应用网格、完整参数表和条款列表。特性项多时使用多列短卡，避免单侧长列表；不为套用六项或三行而删改内容。图片完整显示，文字自然撑高，避免用固定高度、拉伸或过度放大填补留白。
-- `.yy-full .yf-section` 使用无边框布局。所有板块标题与板块简介在各宽度下左对齐、从上到下排列。工厂设备板块使用 `<section id="production">`，保留板块标题和简介，网格只放设备照片与英文 alt，省略每张照片下的标题、说明和 figcaption。
-- 至少核对 1400px、1000px 与手机宽度，检查每个模块而不只看首屏。即使浏览器很宽，也要在窄内容容器中检查原图区域、完整文字和横向溢出。
-
-## 图片
-
-1. 区分 **白底产品图库** 与 **详情插图**。`images` 只放本品封面和去重白底实拍；PDF 产品详情中的生产设备、材料展示、包装、应用、定制案例、图纸等全部审查并纳入对应详情模块，不因不是白底或不是当前 SKU 实拍就直接丢弃。不同产品/组件图明确标为应用或定制案例，不混为当前 SKU 参数。
-2. 封面/首图：以真实产品图确定外形，以 [布局参考](assets/cover-layout-reference.webp) 确定排版，调用内置 imagegen。浅色背景、显著型号/品名、产品材质近景、底部参数栏。参考图中的品牌、电线、UL3530、12AWG、温度、电压、镀锡铜参数均不属于新产品。
-3. 默认同一生成封面用于 `thumb`、`images` 第一项和详情首图。用户明确要两个版本时再分别生成。仅在封面及产品组图上等比合成[官方透明 PNG](assets/yiant-logo.png)。详情直接引用同一封面或组图时保留其 Logo。详情专用图从加标前的源文件制作，包括同一照片另存的详情变体。封面及组图必须输出真实 1:1 WebP（必要时等比缩放、白色补边）；详情图片按内容选比例，不强制正方形。若有已授权取得的同商品 1688 轮播原图或 API 响应，读取该商品 main_imgs，按原顺序逐一处理，勿用 PDF 详情图、旧图库或相似角度替代。通过 CSV images 写入封面及全部合格白底图，只放附件不算完成。标明装配图的电芯及支架仅为应用展示。没有轮播资料的纯 PDF 批次保持原流程。
-4. 优先无字白底原图。去背景或翻译图片文字使用 imagegen，逐张核对孔数、孔形、边缘、接点、镀层色泽、比例。无法保持关键几何时排除。不得改造计量尺、证书、测试数据照片。
-5. 详情优先用本款原始详情图片，先拆出完整照片和完整技术图再排版。详情图按用途输出实际宽高；同一 section 内即使分两排，所有输出图片也必须同像素宽高、同显示尺寸；跨板块可以不同比例。先按板块规划画布再导出，方形图库被横版详情复用时另存详情变体；挑选能容纳同组关键内容的共同宽高比，从原照完整取景或裁去外围空背景。图片以实际比例贴满图框，清理拼图分隔线、扫描边和文件自带的白边。混排技术图时优先采用完整图纸比例，其他照片按该比例出图。逐项核对标注、零件、孔位和铭牌。详情中的图片不能沿用旧产品。中文说明优先转为可编辑英文 HTML，原照片放入对应模块。可通过 HTML 图片视窗显示原拼图的照片子区域，记录原图坐标，不能裁掉产品关键结构。工厂/设备/应用照片保留真实环境；既有产品白底处理可按 hash 复用。图纸不重绘、不改数字；用户要求保留原图时以参考图展示，未确认单位与数值不转为已核实参数。
-6. `image-manifest.json` 的 `images` 记录白底图库；可选 `detail_images` 记录不属于图库的详情素材，含 PDF 页码、来源、适用语境、英文 alt 和视觉核验。共享图库图直接复用，不在两处重复登记。布局参考不能进入本品图库。
-7. 原图和中间文件放 `source/` 或 `staging/`；最终目录仅保留 WebP。质量 82、method 6，保持像素尺寸、比例、方向、透明度，移除冗余元数据；小字技术图可用无损 WebP 保持可读性。
-
-```bash
-python3 scripts/convert_images_to_webp.py /absolute/staging/product \
-  --output-dir /absolute/run/images/product-slug --quality 82 --method 6
-```
-
-## 本地预览与上传
-
-- 本地模式：图片字段用相对输出表根目录的 `images/<slug>/<name>.webp`。
-- 映射模板行提供 `IMGBB_API_KEY` 且本次任务授权上传时，才调用随附脚本，`--row-number` 使用 `batch-manifest.json` 的 `template_row`。密钥不从环境变量或其他项目借用。缺密钥仅阻止上传；公共配置行可以服务多份 PDF。
-- 只使用响应 `data.url`，要求 `https://i.ibb.co/...webp`，不写 viewer/delete/缩略图链接，不设置过期时间。全部所需图片成功后整体替换该行图片字段及所有正文图片。
-- 每张上传保存结果，续跑复用 hash 一致的成功记录。超时等不确定结果标为 pending，先复核再明确决定是否重试，禁止自动重传。
-
-```bash
-python3 scripts/upload_images_to_imgbb.py /absolute/run/images/product-slug \
-  --csv-file /absolute/input.csv --row-number 2 \
-  --manifest /absolute/run/upload-manifests/product-slug.json
-```
-
-## 验证交付
-
-```bash
-python3 scripts/validate_output.py /absolute/output/products_completed.csv \
-  --mode local --manifest /absolute/run/image-manifest.json \
-  --batch-manifest /absolute/run/batch-manifest.json
-# 上传后使用 --mode remote；PDF 模板行数不等于产品数，不用 --original 强制一一对应。
-```
-
-修复脚本问题，再按 `detail-coverage.json` 对照每个源详情模块、图片内文字与不同照片，确认均已使用、合理合并或明确注明排除原因。目视核对英文、事实依据、封面、组图白底、详情原图语境，以及 HTML 1400px/窄屏全部模块。校验通过不等于事实/图像正确。说明完成/待处理行数、上传状态和交付路径；不把模板、模拟测试或受阻样品说成真实产品测试成功。
-
-详情末尾依次放置[固定英文公司简介](assets/company-intro.html)、[英文报告区](assets/material-reports.html)和本品六条英文 FAQ。公司简介使用英文二级标题 `Company Introduction`，下接两段固定原文。不要生成 Buying notes & precautions、付款、退换货、售后或签收条款区。保留官方报告原文、图片顺序、站内路径、alt 和 ID；独立预览可以补全站点 https://yyy.szsdzx.com。报告仅指产品组合中的绝缘纸，不属于当前 SKU 的认证。报告原件不加品牌水印、不裁剪，通过 contain 等大展示。
+Use the [shared export and validation procedure](references/schema-and-evidence.md#export-and-validation) for either input mode. Upload only when requested and a mapped ImgBB key is available. A local preview uses local WebP paths. A remote export uses verified direct URLs. Return counts for completed, duplicate and unresolved inputs, plus the export and preview locations. CMS publication is a separate action.
